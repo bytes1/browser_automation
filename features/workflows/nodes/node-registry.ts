@@ -8,6 +8,8 @@ export type NodeField = {
     key: string
     label: string
     placeholder?: string
+    required?: boolean
+    multiline?: boolean
 }
 
 // A node type's manifest entry. Add a node by adding an entry to nodeRegistry.
