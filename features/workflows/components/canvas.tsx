@@ -1,59 +1,56 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useSyncExternalStore } from "react"
+import { useTheme } from "next-themes"
 import {
-  Background,
-  BackgroundVariant,
-  Controls,
-  MiniMap,
-  ReactFlow,
   addEdge,
+  Controls,
+  ReactFlow,
   useEdgesState,
   useNodesState,
+  ConnectionLineType,
+  type ColorMode,
   type Connection,
   type Edge,
-  type Node,
+  NodeTypes,
 } from "@xyflow/react"
-import { useTheme } from "next-themes"
 
-interface CanvasProps {
-  workflowId?: string
+import { StepNode } from "@/features/workflows/components/step-node"
+import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
+
+import "@xyflow/react/dist/style.css"
+
+const nodeTypes: NodeTypes = { step: StepNode }
+
+const initialNodes: StepNodeType[] = [
+  {
+    id: "start",
+    type: "step",
+    position: { x: 0, y: 0 },
+    data: { type: "start", kind: "trigger", title: "Start", values: {} },
+  },
+]
+
+const initialEdges: Edge[] = []
+
+const emptySubscribe = () => () => { }
+
+// False during server render and hydration, true after mount. Keeps the
+// server and initial client render identical to avoid a hydration mismatch.
+function useMounted() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  )
 }
 
-const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: "input",
-    data: { label: "1. Trigger (Schedule / Manual)" },
-    position: { x: 250, y: 25 },
-  },
-  {
-    id: "2",
-    data: { label: "2. Open Browser URL" },
-    position: { x: 100, y: 140 },
-  },
-  {
-    id: "3",
-    data: { label: "3. Extract Page Data" },
-    position: { x: 400, y: 140 },
-  },
-  {
-    id: "4",
-    type: "output",
-    data: { label: "4. Send Notification" },
-    position: { x: 250, y: 260 },
-  },
-]
-
-const initialEdges: Edge[] = [
-  { id: "e1-2", source: "1", target: "2", animated: true },
-  { id: "e1-3", source: "1", target: "3" },
-  { id: "e2-4", source: "2", target: "4" },
-  { id: "e3-4", source: "3", target: "4" },
-]
-
-export function Canvas({ workflowId }: CanvasProps) {
+export function Canvas() {
   const { resolvedTheme } = useTheme()
+  const mounted = useMounted()
+  const colorMode: ColorMode = mounted
+    ? (resolvedTheme as ColorMode) ?? "light"
+    : "light"
   const [nodes, , onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
@@ -62,25 +59,34 @@ export function Canvas({ workflowId }: CanvasProps) {
     [setEdges]
   )
 
-  const colorMode = resolvedTheme === "dark" ? "dark" : "light"
-
   return (
-    <div className="size-full min-h-[300px]" data-workflow-id={workflowId}>
+    <div className="size-full">
       <ReactFlow
+        nodeTypes={nodeTypes}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        fitView
         colorMode={colorMode}
+        fitView
+        connectionLineType={ConnectionLineType.SmoothStep}
+        connectionLineStyle={{ stroke: "var(--border)" }}
+        defaultEdgeOptions={{
+          type: "smoothstep",
+          style: { stroke: "var(--border)" },
+        }}
+        style={
+          {
+            "--xy-background-color": "var(--background)",
+            "--xy-edge-stroke-width": 2,
+            "--xy-connectionline-stroke-width": 2,
+          } as React.CSSProperties
+        }
+        maxZoom={1}
       >
         <Controls />
-        <MiniMap />
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     </div>
   )
 }
-
-export default Canvas
