@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 
 import { db } from "@/lib/db"
 import { workflows, type Workflow } from "@/lib/db/schema"
@@ -22,4 +22,18 @@ export async function createWorkflow(orgId: string, name: string): Promise<Workf
     }
 
     return workflow
+}
+
+export async function getWorkflow(id: string, orgId: string): Promise<Workflow | null> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+    if (!isUuid) {
+        return null
+    }
+
+    const [workflow] = await db
+        .select()
+        .from(workflows)
+        .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+
+    return workflow ?? null
 }
