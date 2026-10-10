@@ -2,6 +2,7 @@ import * as React from "react"
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs"
 import { auth } from "@clerk/nextjs/server"
 
+import { AppSidebarThemeToggle } from "@/components/app-sidebar-theme-toggle"
 import {
     Sidebar,
     SidebarContent,
@@ -39,7 +40,8 @@ export async function AppSidebar({
                     onCreateWorkflow={createWorkflowAction}
                 />
             </SidebarContent>
-            <SidebarFooter className="group-data-[collapsible=icon]:items-center">
+            <SidebarFooter className="gap-1 group-data-[collapsible=icon]:items-center">
+                <AppSidebarThemeToggle />
                 <UserButton
                     appearance={{
                         elements: {
@@ -53,4 +55,4 @@ export async function AppSidebar({
             </SidebarFooter>
         </Sidebar>
     )
-}
+}
