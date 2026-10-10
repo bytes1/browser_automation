@@ -25,11 +25,14 @@ import type { Workflow } from "@/lib/db/schema"
 import { generateSlug } from "@/features/workflows/lib/generate-slug"
 
 interface WorkflowNavProps {
-    workflows: Workflow[]
+    workflows?: Workflow[]
     onCreateWorkflow: (name: string) => Promise<void>
 }
 
-export function WorkflowNav({ workflows, onCreateWorkflow }: WorkflowNavProps) {
+export function WorkflowNav({
+    workflows = [],
+    onCreateWorkflow,
+}: WorkflowNavProps) {
     const { state } = useSidebar()
     const pathname = usePathname()
     const [isPending, startTransition] = React.useTransition()
@@ -42,13 +45,13 @@ export function WorkflowNav({ workflows, onCreateWorkflow }: WorkflowNavProps) {
     }
 
     const workflowItems = workflows.map((workflow) => {
-        const isActive = pathname === `/workflows/${workflow.id}`
+        const isActive =
+            pathname === `/workflows/${workflow.id}` ||
+            pathname.startsWith(`/workflows/${workflow.id}/`)
+
         return (
             <SidebarMenuItem key={workflow.id}>
-                <SidebarMenuButton
-                    asChild
-                    isActive={isActive}
-                >
+                <SidebarMenuButton asChild isActive={isActive}>
                     <Link href={`/workflows/${workflow.id}`}>
                         <span>{workflow.name}</span>
                     </Link>
@@ -83,7 +86,9 @@ export function WorkflowNav({ workflows, onCreateWorkflow }: WorkflowNavProps) {
                                         </SidebarMenuItem>
                                     </SidebarMenu>
                                     <SidebarSeparator className="mx-0" />
-                                    <SidebarMenu className="gap-y-0.5">{workflowItems}</SidebarMenu>
+                                    <SidebarMenu className="gap-y-0.5">
+                                        {workflowItems}
+                                    </SidebarMenu>
                                 </PopoverContent>
                             </Popover>
                         </SidebarMenuItem>
