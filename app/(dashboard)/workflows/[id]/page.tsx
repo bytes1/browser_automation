@@ -18,7 +18,7 @@ export default async function Page({ params }: PageProps) {
     notFound()
   }
 
-  const workflow = await getWorkflow(id, orgId)
+  const workflow = await getWorkflow(orgId, id)
 
   if (!workflow) {
     notFound()
