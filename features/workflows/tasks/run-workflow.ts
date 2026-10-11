@@ -2,6 +2,10 @@ import toposort from "toposort"
 import { logger, task } from "@trigger.dev/sdk"
 import { Stagehand, browserbase } from "@browserbasehq/stagehand"
 import { nodeExecutors } from "@/features/workflows/nodes/node-executors"
+import {
+    interpolate,
+    type NodeOutputs,
+} from "@/features/workflows/lib/interpolate"
 import { getWorkflow } from "@/features/workflows/data"
 // Import NodeType so we can safely cast the registry key
 import type { NodeType } from "@/features/workflows/nodes/node-registry"
@@ -79,13 +83,26 @@ export const runWorkflowTask = task({
             return { stagehand, page }
         }
 
+        // Store each node's result so downstream node values can reference it.
+        const outputs: NodeOutputs = {}
+
         for (const id of order) {
             const node = byId.get(id)!
             logger.log(`Running step: ${node.data.title}`)
 
             // Cast node.data.type to NodeType so TypeScript knows it's a valid key
             const executor = nodeExecutors[node.data.type as NodeType]
-            if (executor) await executor({ values: node.data.values, getStagehand })
+            if (!executor) continue
+
+            // Resolve {{ nodeId.path }} placeholders from previously completed nodes.
+            const values = Object.fromEntries(
+                Object.entries(node.data.values).map(([key, text]) => [
+                    key,
+                    interpolate({ text, outputs }),
+                ])
+            )
+
+            outputs[id] = await executor({ values, getStagehand })
         }
 
         await browser?.close()
