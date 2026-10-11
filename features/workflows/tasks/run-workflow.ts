@@ -1,5 +1,5 @@
 import toposort from "toposort"
-import { logger, task } from "@trigger.dev/sdk"
+import { logger, metadata, task } from "@trigger.dev/sdk"
 import { Stagehand, browserbase } from "@browserbasehq/stagehand"
 import { nodeExecutors } from "@/features/workflows/nodes/node-executors"
 import {
@@ -12,6 +12,11 @@ import type { NodeType } from "@/features/workflows/nodes/node-registry"
 
 type Browser = Awaited<ReturnType<typeof browserbase.launch>>
 type Page = Awaited<ReturnType<Browser["context"]["pages"]>>[number]
+
+export type RunStep = {
+    nodeId: string
+    status: "pending" | "running" | "done" | "failed"
+}
 
 export const runWorkflowTask = task({
     id: "run-workflow",
@@ -32,6 +37,23 @@ export const runWorkflowTask = task({
             .filter((id) => connected.has(id))
 
         logger.log(`Running workflow ${workflow.name}`, { steps: order.length })
+
+        let steps: RunStep[] = order.map((nodeId) => ({
+            nodeId,
+            status: "pending",
+        }))
+
+        const setStepStatus = (index: number, status: RunStep["status"]) => {
+            // Always publish a fresh snapshot. Trigger.dev compares metadata
+            // values, so mutating this array in place can hide later updates.
+            steps = steps.map((step, stepIndex) =>
+                stepIndex === index ? { ...step, status } : step
+            )
+            metadata.set("steps", steps)
+        }
+
+        metadata.set("steps", steps)
+        await metadata.flush()
 
         let browser: Browser | undefined
         let page: Page | undefined
@@ -86,27 +108,51 @@ export const runWorkflowTask = task({
         // Store each node's result so downstream node values can reference it.
         const outputs: NodeOutputs = {}
 
-        for (const id of order) {
-            const node = byId.get(id)!
-            logger.log(`Running step: ${node.data.title}`)
+        try {
+            for (let i = 0; i < order.length; i++) {
+                const id = order[i]
+                const node = byId.get(id)!
+                logger.log(`Running step: ${node.data.title}`)
 
-            // Cast node.data.type to NodeType so TypeScript knows it's a valid key
-            const executor = nodeExecutors[node.data.type as NodeType]
-            if (!executor) continue
+                // Cast node.data.type to NodeType so TypeScript knows it's a valid key.
+                const executor = nodeExecutors[node.data.type as NodeType]
+                if (!executor) {
+                    // Trigger nodes have no executor, but still complete as workflow steps.
+                    setStepStatus(i, "done")
+                    continue
+                }
 
-            // Resolve {{ nodeId.path }} placeholders from previously completed nodes.
-            const values = Object.fromEntries(
-                Object.entries(node.data.values).map(([key, text]) => [
-                    key,
-                    interpolate({ text, outputs }),
-                ])
-            )
+                setStepStatus(i, "running")
+                await metadata.flush()
 
-            outputs[id] = await executor({ values, getStagehand })
+                try {
+                    // Resolve {{ nodeId.path }} placeholders from completed upstream nodes.
+                    const values = Object.fromEntries(
+                        Object.entries(node.data.values).map(([key, text]) => [
+                            key,
+                            interpolate({ text, outputs }),
+                        ])
+                    )
+
+                    outputs[id] = await executor({ values, getStagehand })
+                } catch (error) {
+                    setStepStatus(i, "failed")
+                    await metadata.flush()
+                    throw error
+                }
+
+                setStepStatus(i, "done")
+            }
+
+            await metadata.flush()
+            return { steps }
+        } finally {
+            try {
+                await stagehand?.close()
+            } finally {
+                await browser?.close()
+            }
         }
 
-        await browser?.close()
-
-        return { steps: order.length }
     },
 })

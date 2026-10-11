@@ -65,7 +65,10 @@ export async function runWorkflowAction({
         { tags: [`workflow:${id}`] }
     )
 
-    return handle
+    return {
+        runId: handle.id,
+        accessToken: handle.publicAccessToken,
+    }
 }
 
 export async function cancelWorkflowRunAction(runId: string) {

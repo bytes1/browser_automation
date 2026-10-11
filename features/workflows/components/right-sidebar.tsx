@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 import { deleteWorkflowAction, runWorkflowAction } from "@/features/workflows/actions"
+import { useWatchWorkflowRun } from "@/features/workflows/components/workflow-runs-provider"
 import { useUpstreamConnections } from "@/features/workflows/hooks/use-upstream-connections"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
 import {
@@ -341,6 +342,7 @@ function ActionsMenu({ workflowId }: { workflowId: string }) {
 // Kicks off a run of the current workflow.
 function RunButton({ workflowId }: { workflowId: string }) {
     const { getNodes, getEdges } = useReactFlow<StepNodeType>()
+    const watchRun = useWatchWorkflowRun()
     const [isPending, startTransition] = useTransition()
 
     return (
@@ -358,7 +360,8 @@ function RunButton({ workflowId }: { workflowId: string }) {
                 }
 
                 startTransition(async () => {
-                    await runWorkflowAction({ id: workflowId, graph })
+                    const run = await runWorkflowAction({ id: workflowId, graph })
+                    watchRun(run.runId, run.accessToken)
                 })
             }}
         >

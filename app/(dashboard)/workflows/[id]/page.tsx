@@ -1,11 +1,16 @@
 import { auth } from "@clerk/nextjs/server"
+import { auth as triggerAuth } from "@trigger.dev/sdk"
 import { notFound } from "next/navigation"
 import { ReactFlowProvider } from "@xyflow/react"
 
 import { liveblocks } from "@/lib/liveblocks"
 import { getWorkflow } from "@/features/workflows/data"
-import { LiveblocksProviderWrapper, Room } from "@/features/workflows/components/room"
+import {
+  LiveblocksProviderWrapper,
+  Room,
+} from "@/features/workflows/components/room"
 import { WorkflowShell } from "@/features/workflows/components/workflow-shell"
+import { WorkflowRunsProvider } from "@/features/workflows/components/workflow-runs-provider"
 
 export default async function Page({
   params,
@@ -32,13 +37,26 @@ export default async function Page({
     },
   })
 
+  // A read-only token scoped to this workflow's run tag, so the client can
+  // subscribe to its runs in realtime. Good for ~an hour of an open canvas.
+  const runsToken = await triggerAuth.createPublicToken({
+    scopes: {
+      read: {
+        tags: [`workflow:${id}`],
+      },
+    },
+    expirationTime: "1hr",
+  })
+
   // The canvas and the sidebar's node palette live in separate components, so a
   // single ReactFlowProvider wraps both to give them one shared React Flow store.
   return (
     <LiveblocksProviderWrapper>
       <Room roomId={id}>
         <ReactFlowProvider>
-          <WorkflowShell workflowId={id} />
+          <WorkflowRunsProvider workflowId={id} accessToken={runsToken}>
+            <WorkflowShell workflowId={id} />
+          </WorkflowRunsProvider>
         </ReactFlowProvider>
       </Room>
     </LiveblocksProviderWrapper>
