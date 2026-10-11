@@ -1,7 +1,5 @@
-"use client"
-
 import { useMemo } from "react"
-import { useStore } from "@xyflow/react"
+import { getIncomers, useStore } from "@xyflow/react"
 
 import {
     nodeRegistry,
@@ -9,47 +7,55 @@ import {
     type StepNodeType,
 } from "@/features/workflows/nodes/node-registry"
 
-type UpstreamConnection = {
+// One insertable reference to an upstream node's output.
+export type UpstreamConnection = {
+    // Ready to drop into a field, e.g. "{{ <nodeId>.title }}". Resolved at run
+    // time by the interpolate helper against that node's output.
     token: string
-    nodeType: NodeType
+    // Human label for a picker, e.g. "Open URL 1 · Title" (node title · output).
     label: string
+    // The source node's type, so the caller can render its registry icon.
+    nodeType: NodeType
 }
 
-/** Returns insertable output tokens for every node upstream of the selection. */
+// Every output produced by any node upstream of the currently selected node —
+// following edges all the way back up the graph, not just direct parents. Reads
+// live graph state from the React Flow store, so it re-computes as edges are
+// connected and disconnected (and as the selection changes). Nodes already run
+// in dependency order, so anything listed here has produced its output by the
+// time the selected node runs.
 export function useUpstreamConnections(): UpstreamConnection[] {
-    const nodes = useStore((state) => state.nodes) as StepNodeType[]
-    const edges = useStore((state) => state.edges)
+    // Store arrays are stable references between changes, so selecting them
+    // directly is safe (no new array per render, no re-render loop).
+    const nodes = useStore((s) => s.nodes) as StepNodeType[]
+    const edges = useStore((s) => s.edges)
+    const selected = nodes.find((n) => n.selected)
 
     return useMemo(() => {
-        const selectedNode = nodes.find((node) => node.selected)
-        if (!selectedNode) return []
+        if (!selected) return []
 
-        const upstreamIds = new Set<string>()
-        const visitUpstream = (targetId: string) => {
-            for (const edge of edges) {
-                if (
-                    edge.target !== targetId ||
-                    edge.source === selectedNode.id ||
-                    upstreamIds.has(edge.source)
-                ) {
-                    continue
-                }
+        // Breadth-first walk up the incoming edges, collecting every ancestor once.
+        // Nearest ancestors come first, which reads well in a picker.
+        const ancestors: StepNodeType[] = []
+        const seen = new Set<string>()
+        const queue: StepNodeType[] = [selected]
 
-                upstreamIds.add(edge.source)
-                visitUpstream(edge.source)
+        while (queue.length) {
+            const current = queue.shift()!
+            for (const incomer of getIncomers(current, nodes, edges) as StepNodeType[]) {
+                if (seen.has(incomer.id)) continue
+                seen.add(incomer.id)
+                ancestors.push(incomer)
+                queue.push(incomer)
             }
         }
 
-        visitUpstream(selectedNode.id)
-
-        return nodes
-            .filter((node) => upstreamIds.has(node.id))
-            .flatMap((node) =>
-                nodeRegistry[node.data.type].outputs.map((output) => ({
-                    token: `{{ ${node.id}.${output.path} }}`,
-                    nodeType: node.data.type,
-                    label: `${node.data.title}: ${output.label}`,
-                }))
-            )
-    }, [edges, nodes])
+        return ancestors.flatMap((node) =>
+            nodeRegistry[node.data.type].outputs.map((output) => ({
+                token: `{{ ${node.id}.${output.path} }}`,
+                label: `${node.data.title} · ${output.label}`,
+                nodeType: node.data.type,
+            }))
+        )
+    }, [selected, nodes, edges])
 }
