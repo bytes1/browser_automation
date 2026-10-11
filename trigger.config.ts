@@ -19,4 +19,10 @@ export default defineConfig({
     },
   },
   dirs: ["features"],
+  build: {
+    // Stagehand locates its bundled extension relative to its package file.
+    // Keeping it external preserves that package-relative asset path in the
+    // Trigger.dev worker instead of resolving it from the generated bundle.
+    external: ["@browserbasehq/stagehand"],
+  },
 });
