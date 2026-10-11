@@ -1,5 +1,12 @@
 import type { Node } from "@xyflow/react"
-import { Globe, MousePointerClick, type LucideIcon } from "lucide-react"
+import {
+    Eye,
+    FileSearch,
+    Globe,
+    MousePointer2,
+    MousePointerClick,
+    type LucideIcon,
+} from "lucide-react"
 
 export type StepNodeKind = "trigger" | "action"
 
@@ -52,6 +59,61 @@ export const nodeRegistry = {
             { path: "url", label: "URL" },
             { path: "title", label: "Title" },
         ],
+    },
+    act: {
+        type: "act",
+        kind: "action",
+        label: "Act",
+        icon: MousePointer2,
+        accent: "bg-violet-500 text-white",
+        fields: [
+            {
+                key: "instruction",
+                label: "Instruction",
+                placeholder: "Click the sign in button, then enter the email address",
+                multiline: true,
+                required: true,
+            },
+        ],
+        outputs: [
+            { path: "success", label: "Succeeded" },
+            { path: "message", label: "Message" },
+            { path: "url", label: "URL" },
+        ],
+    },
+    extract: {
+        type: "extract",
+        kind: "action",
+        label: "Extract",
+        icon: FileSearch,
+        accent: "bg-amber-500 text-white",
+        fields: [
+            {
+                key: "instruction",
+                label: "Instruction",
+                placeholder: "Extract the product name and price",
+                multiline: true,
+                required: true,
+            },
+        ],
+        outputs: [{ path: "data", label: "Extracted data" }],
+    },
+    observe: {
+        type: "observe",
+        kind: "action",
+        label: "Observe",
+        icon: Eye,
+        accent: "bg-cyan-500 text-white",
+        fields: [
+            {
+                key: "instruction",
+                label: "Instruction",
+                placeholder: "Find the sign in button and email field",
+                multiline: true,
+                required: true,
+            },
+        ],
+        outputs: [{ path: "matches", label: "Matches" }],
     },
 } satisfies Record<string, NodeDefinition>
 

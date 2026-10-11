@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useReactFlow, useStore } from "@xyflow/react"
-import { MoreHorizontal, Play, Trash2 } from "lucide-react"
+import { MoreHorizontal, Play, Trash2, Unlink } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -129,7 +129,8 @@ function Field({
 
 // The Editor tab: one input per field on the selected node, or an empty state.
 function Inspector({ node }: { node: StepNodeType | undefined }) {
-    const { updateNodeData } = useReactFlow<StepNodeType>()
+    const { updateNodeData, deleteElements, getNode } = useReactFlow<StepNodeType>()
+    const edges = useStore((s) => s.edges)
     // Outputs of every node upstream of the selected one, as insertable {{ }}
     // tokens. Empty when nothing feeds into this node.
     const connections = useUpstreamConnections()
@@ -147,6 +148,7 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
 
     const { type, title, values } = node.data
     const def: NodeDefinition = nodeRegistry[type]
+    const links = edges.filter((edge) => edge.source === node.id || edge.target === node.id)
 
     // Untouched fields fall back to the first one, so a chip always has a home.
     const targetKey = activeFieldKey ?? def.fields[0]?.key
@@ -204,6 +206,59 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
                         </div>
                     </div>
                 )}
+
+                {links.length > 0 && (
+                    <div className="flex flex-col gap-1.5">
+                        <Label className="text-xs">Linked nodes</Label>
+                        <div className="flex flex-col gap-1">
+                            {links.map((edge) => {
+                                const isIncoming = edge.target === node.id
+                                const otherNode = getNode(isIncoming ? edge.source : edge.target)
+                                const relation = isIncoming ? "From" : "To"
+
+                                return (
+                                    <div
+                                        key={edge.id}
+                                        className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5"
+                                    >
+                                        <span className="min-w-0 truncate text-xs">
+                                            <span className="text-muted-foreground">{relation} </span>
+                                            {otherNode?.data.title ?? "Unknown node"}
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="size-7 shrink-0"
+                                            aria-label={`Unlink ${relation.toLowerCase()} ${otherNode?.data.title ?? "node"}`}
+                                            title={`Unlink ${relation.toLowerCase()} ${otherNode?.data.title ?? "node"}`}
+                                            onClick={() => {
+                                                void deleteElements({ edges: [{ id: edge.id }] })
+                                            }}
+                                        >
+                                            <Unlink />
+                                        </Button>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                <div className="border-t border-border pt-3">
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => {
+                            void deleteElements({ nodes: [{ id: node.id }] })
+                        }}
+                    >
+                        <Trash2 />
+                        Delete node
+                    </Button>
+                </div>
             </div>
         </Section>
     )
