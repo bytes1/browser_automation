@@ -5,11 +5,11 @@ import { useRealtimeRun, useRealtimeRunsWithTag } from "@trigger.dev/react-hooks
 
 import type { RunStep, runWorkflowTask } from "@/features/workflows/tasks/run-workflow"
 
-type WorkflowRun = ReturnType<
+export type WorkflowRun = ReturnType<
     typeof useRealtimeRunsWithTag<typeof runWorkflowTask>
 >["runs"][number]
 
-interface WorkflowRunsContextValue {
+export interface WorkflowRunsContextValue {
     runs: WorkflowRun[]
     error?: Error
     watchRun: (runId: string, accessToken: string) => void
@@ -18,6 +18,18 @@ interface WorkflowRunsContextValue {
 }
 
 const WorkflowRunsContext = createContext<WorkflowRunsContextValue | null>(null)
+
+export function getRunSteps(run: WorkflowRun): RunStep[] {
+    const outputSteps = run.output?.steps
+    if (Array.isArray(outputSteps) && outputSteps.length > 0) {
+        return outputSteps as RunStep[]
+    }
+    const metadataSteps = run.metadata?.steps
+    if (Array.isArray(metadataSteps) && metadataSteps.length > 0) {
+        return metadataSteps as unknown as RunStep[]
+    }
+    return []
+}
 
 interface WorkflowRunsProviderProps {
     workflowId: string
@@ -54,15 +66,32 @@ export function WorkflowRunsProvider({
         setActiveRunRequest({ runId, accessToken: token })
     }, [])
 
+    const allRuns = useMemo(() => {
+        const list = [...runs]
+        if (activeRun) {
+            const index = list.findIndex((r) => r.id === activeRun.id)
+            if (index === -1) {
+                list.unshift(activeRun as WorkflowRun)
+            } else {
+                list[index] = activeRun as WorkflowRun
+            }
+        }
+        return list.sort((a, b) => {
+            const tA = new Date(a.createdAt).getTime()
+            const tB = new Date(b.createdAt).getTime()
+            return tB - tA
+        })
+    }, [runs, activeRun])
+
     const value = useMemo<WorkflowRunsContextValue>(
         () => ({
-            runs,
+            runs: allRuns,
             error,
             watchRun,
             activeRun: activeRun as WorkflowRun | undefined,
             isWatchingRun: activeRunRequest !== null,
         }),
-        [runs, error, watchRun, activeRun, activeRunRequest]
+        [allRuns, error, watchRun, activeRun, activeRunRequest]
     )
 
     return (
@@ -72,7 +101,7 @@ export function WorkflowRunsProvider({
     )
 }
 
-function useWorkflowRuns() {
+export function useWorkflowRuns() {
     const ctx = useContext(WorkflowRunsContext)
     if (!ctx) {
         throw new Error(
@@ -103,24 +132,12 @@ export function useLatestRunSteps(): LatestRunSteps {
             return { steps: [], isLive: true }
         }
 
-        const latest = runs.reduce<WorkflowRun | undefined>((newest, run) => {
-            if (!newest || run.createdAt > newest.createdAt) return run
-            return newest
-        }, undefined)
-        const run = activeRun ?? latest
+        const run = activeRun ?? runs[0]
 
         if (!run) return { steps: [], isLive: false }
 
         const isLive = run.status === "QUEUED" || run.status === "EXECUTING"
-        const outputSteps = run.output?.steps
-        const metadataSteps = run.metadata?.steps
-        // Older runs returned a numeric `steps` count. Ignore that legacy shape
-        // and use live metadata (or an empty list) instead of passing it to nodes.
-        const steps = Array.isArray(outputSteps)
-            ? (outputSteps as RunStep[])
-            : Array.isArray(metadataSteps)
-              ? (metadataSteps as RunStep[])
-              : []
+        const steps = getRunSteps(run)
 
         return { steps, isLive }
     }, [runs, activeRun, isWatchingRun])
