@@ -1,6 +1,12 @@
 import toposort from "toposort"
 import { logger, metadata, task } from "@trigger.dev/sdk"
 import { Stagehand, browserbase } from "@browserbasehq/stagehand"
+import {
+    flush as flushNeatlogs,
+    init as initNeatlogs,
+    trace as traceNeatlogs,
+    type TraceOptions as NeatlogsTraceOptions,
+} from "neatlogs"
 import { nodeExecutors } from "@/features/workflows/nodes/node-executors"
 import {
     interpolate,
@@ -13,9 +19,87 @@ import type { NodeType } from "@/features/workflows/nodes/node-registry"
 type Browser = Awaited<ReturnType<typeof browserbase.launch>>
 type Page = Awaited<ReturnType<Browser["context"]["pages"]>>[number]
 
+// Initialize once per Trigger worker. Neatlogs stays optional: without a key,
+// or if initialization fails, workflow execution continues without tracing.
+let neatlogsInitialization: Promise<boolean> | undefined
+
+async function initializeNeatlogs() {
+    const apiKey = process.env.NEATLOGS_API_KEY
+    if (!apiKey) return false
+
+    neatlogsInitialization ??= initNeatlogs({
+        apiKey,
+        workflowName: "browser-automation",
+        // Trigger owns the worker lifecycle; don't let Neatlogs install its own
+        // process-signal handlers or shut down a potentially warm worker.
+        registerShutdownHandlers: false,
+    })
+        .then(() => true)
+        .catch((error: unknown) => {
+            logger.warn("Neatlogs initialization failed; continuing without tracing", {
+                error: error instanceof Error ? error.message : String(error),
+            })
+            return false
+        })
+
+    return neatlogsInitialization
+}
+
+// Keep telemetry fail-open without swallowing errors from the workflow itself.
+async function withNeatlogsTrace<T>(
+    enabled: boolean,
+    options: NeatlogsTraceOptions,
+    operation: () => Promise<T>
+): Promise<T> {
+    if (!enabled) return operation()
+
+    let started = false
+    let completed = false
+    let operationFailed = false
+    let result!: T
+    let operationError: unknown
+
+    try {
+        await traceNeatlogs(options, async () => {
+            started = true
+            try {
+                result = await operation()
+                completed = true
+            } catch (error) {
+                operationFailed = true
+                operationError = error
+                throw error
+            }
+        })
+    } catch (error) {
+        if (operationFailed) throw operationError
+
+        if (!started) {
+            logger.warn("Neatlogs trace could not start; continuing without tracing", {
+                error: error instanceof Error ? error.message : String(error),
+            })
+            return operation()
+        }
+
+        if (!completed) throw error
+
+        // The workflow work completed; a finalization error must not undo it.
+        logger.warn("Neatlogs trace finalization failed; workflow completed", {
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+
+    return result
+}
+
 export type RunStep = {
     nodeId: string
+    nodeType: string
+    title: string
     status: "pending" | "running" | "done" | "failed"
+    durationMs?: number
+    output?: any
+    error?: string
 }
 
 export const runWorkflowTask = task({
@@ -38,22 +122,33 @@ export const runWorkflowTask = task({
 
         logger.log(`Running workflow ${workflow.name}`, { steps: order.length })
 
-        let steps: RunStep[] = order.map((nodeId) => ({
-            nodeId,
-            status: "pending",
-        }))
+        let steps: RunStep[] = order.map((nodeId) => {
+            const node = byId.get(nodeId)
+            return {
+                nodeId,
+                nodeType: (node?.data.type as string) ?? "start",
+                title: node?.data.title ?? "Step",
+                status: "pending",
+            }
+        })
 
-        const setStepStatus = (index: number, status: RunStep["status"]) => {
+        const updateStep = (index: number, patch: Partial<RunStep>) => {
             // Always publish a fresh snapshot. Trigger.dev compares metadata
             // values, so mutating this array in place can hide later updates.
             steps = steps.map((step, stepIndex) =>
-                stepIndex === index ? { ...step, status } : step
+                stepIndex === index ? { ...step, ...patch } : step
             )
-            metadata.set("steps", steps)
+            metadata.set("steps", steps as any)
         }
 
-        metadata.set("steps", steps)
+        const setStepStatus = (index: number, status: RunStep["status"]) => {
+            updateStep(index, { status })
+        }
+
+        metadata.set("steps", steps as any)
         await metadata.flush()
+
+        const neatlogsEnabled = await initializeNeatlogs()
 
         let browser: Browser | undefined
         let page: Page | undefined
@@ -108,49 +203,120 @@ export const runWorkflowTask = task({
         // Store each node's result so downstream node values can reference it.
         const outputs: NodeOutputs = {}
 
-        try {
-            for (let i = 0; i < order.length; i++) {
-                const id = order[i]
-                const node = byId.get(id)!
-                logger.log(`Running step: ${node.data.title}`)
-
-                // Cast node.data.type to NodeType so TypeScript knows it's a valid key.
-                const executor = nodeExecutors[node.data.type as NodeType]
-                if (!executor) {
-                    // Trigger nodes have no executor, but still complete as workflow steps.
-                    setStepStatus(i, "done")
-                    continue
-                }
-
-                setStepStatus(i, "running")
-                await metadata.flush()
-
+        const runWorkflow = () => withNeatlogsTrace(
+            neatlogsEnabled,
+            {
+                name: workflow.name,
+                kind: "WORKFLOW",
+                sessionId: workflowId,
+                sessionEntryPoint: "trigger.dev",
+                attributes: { workflowId },
+            },
+            async () => {
                 try {
-                    // Resolve {{ nodeId.path }} placeholders from completed upstream nodes.
-                    const values = Object.fromEntries(
-                        Object.entries(node.data.values).map(([key, text]) => [
-                            key,
-                            interpolate({ text, outputs }),
-                        ])
-                    )
+                    for (let i = 0; i < order.length; i++) {
+                        const id = order[i]
+                        const node = byId.get(id)!
+                        logger.log(`Running step: ${node.data.title}`)
 
-                    outputs[id] = await executor({ values, getStagehand })
-                } catch (error) {
-                    setStepStatus(i, "failed")
+                        const stepStartTime = Date.now()
+
+                        // Cast node.data.type to NodeType so TypeScript knows it's a valid key.
+                        const executor = nodeExecutors[node.data.type as NodeType]
+                        if (!executor) {
+                            // Trigger nodes have no executor, but still complete as workflow steps.
+                            updateStep(i, {
+                                status: "done",
+                                durationMs: Date.now() - stepStartTime,
+                                output: { triggered: true },
+                            })
+                            await metadata.flush()
+                            continue
+                        }
+
+                        updateStep(i, { status: "running" })
+                        await metadata.flush()
+
+                        try {
+                            // Resolve {{ nodeId.path }} placeholders from completed upstream nodes.
+                            const values = Object.fromEntries(
+                                Object.entries(node.data.values).map(([key, text]) => [
+                                    key,
+                                    interpolate({ text, outputs }),
+                                ])
+                            )
+
+                            let stepResult: unknown
+                            await withNeatlogsTrace(
+                                neatlogsEnabled,
+                                {
+                                    name: node.data.title,
+                                    kind: "TOOL",
+                                    toolName: node.data.type,
+                                    attributes: {
+                                        workflowId,
+                                        nodeId: id,
+                                        nodeType: node.data.type,
+                                    },
+                                },
+                                async () => {
+                                    // Don't include instruction values or extracted page
+                                    // data in telemetry; trace timing and node failures.
+                                    stepResult = await executor({ values, getStagehand })
+                                    outputs[id] = stepResult
+                                }
+                            )
+
+                            const durationMs = Date.now() - stepStartTime
+                            updateStep(i, {
+                                status: "done",
+                                durationMs,
+                                output: stepResult,
+                            })
+                            await metadata.flush()
+                        } catch (error) {
+                            const durationMs = Date.now() - stepStartTime
+                            const errorMessage =
+                                error instanceof Error
+                                    ? error.message
+                                    : typeof error === "object" && error !== null
+                                      ? JSON.stringify(error)
+                                      : String(error)
+
+                            updateStep(i, {
+                                status: "failed",
+                                durationMs,
+                                error: errorMessage,
+                            })
+                            await metadata.flush()
+                            throw error
+                        }
+                    }
+
                     await metadata.flush()
-                    throw error
+                    return { steps }
+                } finally {
+                    try {
+                        await stagehand?.close()
+                    } finally {
+                        await browser?.close()
+                    }
                 }
-
-                setStepStatus(i, "done")
             }
+        )
 
-            await metadata.flush()
-            return { steps }
+        try {
+            return await runWorkflow()
         } finally {
-            try {
-                await stagehand?.close()
-            } finally {
-                await browser?.close()
+            if (neatlogsEnabled) {
+                try {
+                    const flushed = await flushNeatlogs()
+                    if (!flushed) logger.warn("Neatlogs did not flush all workflow telemetry")
+                } catch (error) {
+                    logger.warn("Neatlogs flush failed; workflow result is unaffected", {
+                        error: error instanceof Error ? error.message : String(error),
+                    })
+                }
             }
         }
 

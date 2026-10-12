@@ -6,6 +6,7 @@ import {
 
 import { Canvas } from "./canvas"
 import { RightSidebar } from "./right-sidebar"
+import { WorkflowConsole } from "./workflow-console"
 
 interface WorkflowShellProps {
   workflowId: string
@@ -19,11 +20,9 @@ export function WorkflowShell({ workflowId }: WorkflowShellProps) {
           <ResizablePanel minSize="18rem">
             <Canvas />
           </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel defaultSize="8rem" minSize="6rem">
-            <div className="flex size-full items-center justify-center text-muted-foreground">
-              Logs
-            </div>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize="16rem" minSize="3.5rem">
+            <WorkflowConsole workflowId={workflowId} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </ResizablePanel>
