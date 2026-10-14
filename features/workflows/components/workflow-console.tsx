@@ -11,6 +11,7 @@ import {
     Copy,
     Layers,
     Play,
+    Sparkles,
     Terminal,
     Timer,
 } from "lucide-react"
@@ -230,6 +231,127 @@ function FormattedJson({ data }: { data: unknown }) {
     )
 }
 
+type QlooOutputData = {
+    entities?: Array<{
+        id: string
+        name: string
+        type: string
+        affinity: number | null
+        explanation?: string
+    }>
+    names?: string[]
+    topPickName?: string
+    topPickReason?: string
+    summary?: string
+    searchQuery?: string
+    city?: string | null
+    query?: string
+}
+
+function QlooTasteCard({ output }: { output: QlooOutputData }) {
+    const [viewMode, setViewMode] = useState<"visual" | "json">("visual")
+    const { topPickName, topPickReason, entities, searchQuery, summary, city } = output
+
+    if (viewMode === "json") {
+        return (
+            <div className="space-y-2">
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        onClick={() => setViewMode("visual")}
+                        className="text-[11px] text-fuchsia-600 dark:text-fuchsia-400 hover:underline font-medium"
+                    >
+                        ← Switch to Taste Visualizer
+                    </button>
+                </div>
+                <FormattedJson data={output} />
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-fuchsia-600 dark:text-fuchsia-400">
+                    <Sparkles className="size-3.5" />
+                    <span>Qloo Taste Intelligence Insights</span>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => setViewMode("json")}
+                    className="text-[11px] text-muted-foreground hover:text-foreground font-medium"
+                >
+                    View Raw JSON
+                </button>
+            </div>
+
+            {topPickName && (
+                <div className="rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/10 p-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1 rounded bg-fuchsia-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-700 dark:text-fuchsia-300">
+                            ⭐ Top Cultural Match {city ? `in ${city}` : ""}
+                        </span>
+                        {entities?.[0]?.affinity !== null && entities?.[0]?.affinity !== undefined && (
+                            <span className="font-mono text-xs font-bold text-fuchsia-700 dark:text-fuchsia-300">
+                                {Math.round(entities[0].affinity * 100)}% Affinity
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-sm font-bold text-foreground">
+                        {topPickName}
+                    </div>
+                    {topPickReason && (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            {topPickReason}
+                        </p>
+                    )}
+                    {searchQuery && (
+                        <div className="rounded bg-background/70 p-2 text-[11px] font-mono text-muted-foreground flex items-center justify-between gap-2 border border-border/50">
+                            <span className="truncate">Browser Query: {searchQuery}</span>
+                            <CopyButton text={searchQuery} label="Copy Query" />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {Array.isArray(entities) && entities.length > 0 && (
+                <div className="rounded-md border border-border bg-card p-3 space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Matched Cultural Entities ({entities.length})
+                    </div>
+                    <div className="divide-y divide-border/60">
+                        {entities.slice(0, 6).map((entity, i) => (
+                            <div key={entity.id || i} className="py-2 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="text-xs font-medium text-foreground truncate">
+                                        {i + 1}. {entity.name}
+                                    </div>
+                                    {entity.explanation && (
+                                        <div className="text-[11px] text-muted-foreground truncate">
+                                            {entity.explanation}
+                                        </div>
+                                    )}
+                                </div>
+                                {entity.affinity !== null && entity.affinity !== undefined && (
+                                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-mono font-medium text-foreground">
+                                        {Math.round(entity.affinity * 100)}%
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {summary && (!entities || entities.length === 0) && (
+                <div className="rounded-md border border-border bg-muted/40 p-3 font-mono text-xs text-foreground whitespace-pre-wrap">
+                    {summary}
+                </div>
+            )}
+        </div>
+    )
+}
+
 // ---------------------------------------------------------------------------
 // Step Details Panel
 // ---------------------------------------------------------------------------
@@ -258,6 +380,9 @@ function StepDetailsPanel({
     const { title, nodeType, status, durationMs, output, error, nodeId } = step
     const hasOutput = output !== undefined && output !== null
     const hasError = !!error || status === "failed"
+    const isQlooStep =
+        nodeType?.startsWith("qloo") ||
+        (typeof output === "object" && output !== null && ("entities" in output || "topPickName" in output))
 
     return (
         <div className="flex size-full flex-col overflow-y-auto">
@@ -325,7 +450,11 @@ function StepDetailsPanel({
                     </div>
 
                     {hasOutput ? (
-                        <FormattedJson data={output} />
+                        isQlooStep ? (
+                            <QlooTasteCard output={output as QlooOutputData} />
+                        ) : (
+                            <FormattedJson data={output} />
+                        )
                     ) : (
                         <div className="rounded-md border border-dashed border-border/80 bg-muted/20 p-4 text-center text-xs text-muted-foreground">
                             {status === "running" && isLive ? (

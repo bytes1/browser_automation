@@ -3,6 +3,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react"
 
 import {
     nodeRegistry,
+  type NodeField,
     type StepNodeType,
 } from "@/features/workflows/nodes/node-registry"
 import { useLatestRunSteps } from "@/features/workflows/components/workflow-runs-provider"
@@ -14,7 +15,14 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
     const { type, kind, title, values } = data
     const def = nodeRegistry[type]
     const Icon = def.icon
-    const fields = def.fields.filter((field) => values[field.key])
+    const fields = (def.fields as NodeField[]).filter((field) => {
+        if (!values[field.key]) return false
+        if (!field.showWhen) return true
+        const selectedValue =
+            values[field.showWhen.field] ??
+            (field.showWhen.field === "frequency" && values.cron ? "custom" : "")
+        return selectedValue === field.showWhen.value
+    })
 
     // Reflect this node's state in the latest run. A node is only "running" while
     // the run is actually live — once it ends, a node left marked running stops

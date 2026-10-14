@@ -190,7 +190,7 @@ export const runWorkflowTask = task({
                 browser,
                 model: {
                     modelName: "google/gemini-2.5-flash"
-                }
+                },
                 // disablePino is completely removed in V4
             })
 
