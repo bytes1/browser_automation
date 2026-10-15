@@ -1,15 +1,18 @@
 import type { Node } from "@xyflow/react"
 import {
+  BrainCircuit,
+  CalendarClock,
   Eye,
   FileSearch,
+  GitCompareArrows,
   Globe,
   Mail,
-  CalendarClock,
+  MapPin,
   MousePointer2,
   MousePointerClick,
-  MapPin,
   Search,
   Sparkles,
+  Users,
   type LucideIcon,
 } from "lucide-react"
 
@@ -44,6 +47,19 @@ export type NodeDefinition = {
   fields: NodeField[]
   outputs: NodeOutput[]
 }
+
+const qlooCategoryOptions = [
+  { label: "Artist / Musician", value: "urn:entity:artist" },
+  { label: "Place / Venue / Dining", value: "urn:entity:place" },
+  { label: "Movie / Film", value: "urn:entity:movie" },
+  { label: "TV Show", value: "urn:entity:tv_show" },
+  { label: "Book / Author", value: "urn:entity:book" },
+  { label: "Brand / Fashion / Lifestyle", value: "urn:entity:brand" },
+  { label: "Podcast", value: "urn:entity:podcast" },
+  { label: "Video Game", value: "urn:entity:video_game" },
+  { label: "Travel Destination", value: "urn:entity:destination" },
+  { label: "Person / Creator", value: "urn:entity:person" },
+]
 
 export const nodeRegistry = {
   start: {
@@ -236,6 +252,49 @@ export const nodeRegistry = {
     ],
     outputs: [{ path: "matches", label: "Matches" }],
   },
+  "ai-synthesize": {
+    type: "ai-synthesize",
+    kind: "action",
+    label: "AI Cultural Synthesizer",
+    icon: BrainCircuit,
+    accent: "bg-indigo-500 text-white",
+    fields: [
+      {
+        key: "format",
+        label: "Deliverable format",
+        required: true,
+        defaultValue: "brief",
+        options: [
+          { label: "Executive Cultural Brief", value: "brief" },
+          { label: "VIP Concierge Itinerary", value: "itinerary" },
+          { label: "Brand Sponsorship Pitch", value: "pitch" },
+          { label: "Personalized Outreach Email", value: "outreach" },
+        ],
+      },
+      {
+        key: "instruction",
+        label: "Synthesis goal",
+        placeholder:
+          "Combine Qloo taste insights with extracted web details into a curated brief",
+        multiline: true,
+        required: true,
+      },
+      {
+        key: "contextData",
+        label: "Upstream data & signals",
+        placeholder:
+          "Click Connections below to insert {{ Qloo.summary }} and {{ Extract.data }}",
+        multiline: true,
+        required: true,
+      },
+    ],
+    outputs: [
+      { path: "headline", label: "Headline" },
+      { path: "content", label: "Synthesized report" },
+      { path: "actionRecommendation", label: "Recommended next action" },
+      { path: "summary", label: "Full formatted brief" },
+    ],
+  },
   "send-email": {
     type: "send-email",
     kind: "action",
@@ -284,8 +343,8 @@ export const nodeRegistry = {
     fields: [
       {
         key: "query",
-        label: "Favorite(s)",
-        placeholder: "Radiohead, Haruki Murakami",
+        label: "Favorite(s) or Extracted Web Text",
+        placeholder: "Radiohead, Haruki Murakami (or connect {{ Extract.data }})",
         multiline: true,
         required: true,
       },
@@ -296,16 +355,7 @@ export const nodeRegistry = {
         defaultValue: "any",
         options: [
           { label: "Any category", value: "any" },
-          { label: "Artist / Musician", value: "urn:entity:artist" },
-          { label: "Place / Venue / Dining", value: "urn:entity:place" },
-          { label: "Movie / Film", value: "urn:entity:movie" },
-          { label: "TV Show", value: "urn:entity:tv_show" },
-          { label: "Book / Author", value: "urn:entity:book" },
-          { label: "Brand / Fashion / Lifestyle", value: "urn:entity:brand" },
-          { label: "Podcast", value: "urn:entity:podcast" },
-          { label: "Video Game", value: "urn:entity:video_game" },
-          { label: "Travel Destination", value: "urn:entity:destination" },
-          { label: "Person / Creator", value: "urn:entity:person" },
+          ...qlooCategoryOptions,
         ],
       },
     ],
@@ -328,7 +378,7 @@ export const nodeRegistry = {
     fields: [
       {
         key: "entityIds",
-        label: "Taste seed IDs",
+        label: "Taste seed IDs or names",
         placeholder: "Connect Qloo Taste Seeds → Entity IDs",
         required: true,
       },
@@ -337,23 +387,22 @@ export const nodeRegistry = {
         label: "Recommend category",
         required: true,
         defaultValue: "urn:entity:place",
-        options: [
-          { label: "Artist / Musician", value: "urn:entity:artist" },
-          { label: "Place / Venue / Dining", value: "urn:entity:place" },
-          { label: "Movie / Film", value: "urn:entity:movie" },
-          { label: "TV Show", value: "urn:entity:tv_show" },
-          { label: "Book / Author", value: "urn:entity:book" },
-          { label: "Brand / Fashion / Lifestyle", value: "urn:entity:brand" },
-          { label: "Podcast", value: "urn:entity:podcast" },
-          { label: "Video Game", value: "urn:entity:video_game" },
-          { label: "Travel Destination", value: "urn:entity:destination" },
-          { label: "Person / Creator", value: "urn:entity:person" },
-        ],
+        options: qlooCategoryOptions,
       },
       {
         key: "city",
         label: "City / Location (Optional)",
         placeholder: "Tokyo, New York, or leave empty for global",
+      },
+      {
+        key: "vibeTags",
+        label: "Mood / Vibe Signals (Optional)",
+        placeholder: "indie, cozy, avant-garde, late-night",
+      },
+      {
+        key: "negativeSeeds",
+        label: "Exclude / Dislike Seeds (Optional)",
+        placeholder: "Entities or styles to filter out",
       },
       {
         key: "limit",
@@ -381,11 +430,16 @@ export const nodeRegistry = {
     fields: [
       {
         key: "entityIds",
-        label: "Taste seed IDs",
+        label: "Taste seed IDs or names",
         placeholder: "Connect Qloo Taste Seeds → Entity IDs",
         required: true,
       },
       { key: "city", label: "City", placeholder: "New York", required: true },
+      {
+        key: "vibeTags",
+        label: "Venue Mood / Tags (Optional)",
+        placeholder: "speakeasy, vinyl, omakase, third-wave coffee",
+      },
       {
         key: "limit",
         label: "Result count",
@@ -401,6 +455,68 @@ export const nodeRegistry = {
       { path: "topPickReason", label: "Top venue explanation" },
       { path: "searchQuery", label: "Maps search query" },
       { path: "summary", label: "Formatted itinerary summary" },
+    ],
+  },
+  "qloo-compare": {
+    type: "qloo-compare",
+    kind: "action",
+    label: "Qloo Taste Overlap",
+    icon: GitCompareArrows,
+    accent: "bg-pink-600 text-white",
+    fields: [
+      {
+        key: "firstSeeds",
+        label: "Profile A (Seeds or IDs)",
+        placeholder: "Radiohead, A24 (or {{ SeedsA.entityIds }})",
+        required: true,
+      },
+      {
+        key: "secondSeeds",
+        label: "Profile B (Seeds or IDs)",
+        placeholder: "Daft Punk, Studio Ghibli (or {{ SeedsB.entityIds }})",
+        required: true,
+      },
+      {
+        key: "targetType",
+        label: "Bridge Category",
+        required: true,
+        defaultValue: "urn:entity:place",
+        options: qlooCategoryOptions,
+      },
+      {
+        key: "city",
+        label: "City (Optional)",
+        placeholder: "London, Tokyo, New York",
+      },
+    ],
+    outputs: [
+      { path: "compatibilityScore", label: "Compatibility %" },
+      { path: "topPickName", label: "Top shared bridge pick" },
+      { path: "topPickReason", label: "Shared affinity rationale" },
+      { path: "entities", label: "Shared recommendations" },
+      { path: "searchQuery", label: "Web search query" },
+      { path: "summary", label: "Overlap report" },
+    ],
+  },
+  "qloo-demographics": {
+    type: "qloo-demographics",
+    kind: "action",
+    label: "Qloo Audience Persona",
+    icon: Users,
+    accent: "bg-purple-600 text-white",
+    fields: [
+      {
+        key: "entityIds",
+        label: "Brand, Artist, or Seed IDs",
+        placeholder: "Acne Studios, Wes Anderson, or {{ Seeds.entityIds }}",
+        required: true,
+      },
+    ],
+    outputs: [
+      { path: "topAgeGroup", label: "Dominant age cohort" },
+      { path: "topGender", label: "Gender skew" },
+      { path: "personaSummary", label: "Audience persona summary" },
+      { path: "summary", label: "Full demographic profile" },
     ],
   },
 } satisfies Record<string, NodeDefinition>

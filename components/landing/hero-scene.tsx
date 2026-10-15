@@ -98,31 +98,41 @@ function ParticleField({ count = 300 }: { count?: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Glowing orb in the center – morphing distorted sphere
+// Glowing orb in the center – morphing distorted sphere + cursor tracking
 // ---------------------------------------------------------------------------
 function GlowOrb() {
   const meshRef = useRef<THREE.Mesh>(null!)
 
   useFrame((state) => {
     const t = state.clock.elapsedTime
-    meshRef.current.rotation.x = t * 0.15
-    meshRef.current.rotation.z = t * 0.1
+    meshRef.current.rotation.x = t * 0.15 + state.pointer.y * 0.3
+    meshRef.current.rotation.z = t * 0.1 - state.pointer.x * 0.3
+    meshRef.current.position.x = THREE.MathUtils.lerp(
+      meshRef.current.position.x,
+      1.6 + state.pointer.x * 0.6,
+      0.04
+    )
+    meshRef.current.position.y = THREE.MathUtils.lerp(
+      meshRef.current.position.y,
+      0.2 + state.pointer.y * 0.4,
+      0.04
+    )
   })
 
   return (
     <Float speed={1.5} rotationIntensity={0.4} floatIntensity={0.6}>
-      <mesh ref={meshRef} position={[1.5, 0.2, -1]}>
-        <icosahedronGeometry args={[1.6, 20]} />
+      <mesh ref={meshRef} position={[1.6, 0.2, -1]}>
+        <icosahedronGeometry args={[1.65, 24]} />
         <MeshDistortMaterial
-          color="#8069ee"
-          emissive="#6048c9"
-          emissiveIntensity={0.35}
-          roughness={0.3}
-          metalness={0.2}
-          distort={0.35}
-          speed={1.8}
+          color="#7e66f9"
+          emissive="#5c42d9"
+          emissiveIntensity={0.42}
+          roughness={0.25}
+          metalness={0.3}
+          distort={0.38}
+          speed={2.1}
           transparent
-          opacity={0.18}
+          opacity={0.22}
         />
       </mesh>
     </Float>

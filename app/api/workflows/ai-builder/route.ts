@@ -13,6 +13,10 @@ const responseSchema = {
   properties: {
     reply: { type: "STRING" },
     needsClarification: { type: "BOOLEAN" },
+    followUpPrompts: {
+      type: "ARRAY",
+      items: { type: "STRING" },
+    },
     steps: {
       type: "ARRAY",
       items: {
@@ -191,7 +195,7 @@ export async function POST(request: Request) {
     ? JSON.stringify(body.currentGraph).slice(0, 16000)
     : "No current workflow draft."
   const transcript = messages.map((message) => `${message.role.toUpperCase()}: ${message.content}`).join("\n")
-  const systemInstruction = `You help users create and edit workflows in a visual browser automation app. Return a concise helpful reply and a complete linear workflow as structured output. Only use the provided node catalog. A workflow must contain exactly one trigger as its first step, then action steps. Use the start trigger for manual runs and schedule for timed runs. Never claim an unsupported capability. If required details are missing, set needsClarification=true, ask one concise question in reply, and return steps=[]. Do not guess URLs, recipients, credentials, or personal data. For settings that use data from earlier nodes, write references exactly as {{ step_1.outputPath }} using a 1-based step number and an output path listed in the catalog. Keep at most eight action steps. The existing workflow is provided as ordered steps; when the user asks to edit a node, preserve the existing steps and every setting they did not ask to change. Only replace the workflow when the user asks for a new or different workflow. Node IDs and positions are hidden from you; use step_N references for outputs. Changes are only a draft and must not be described as applied to the canvas. Existing workflow draft: ${currentGraph}\nNode catalog: ${JSON.stringify(catalog)}`
+  const systemInstruction = `You help users create, edit, explain, and optimize workflows in a visual browser automation app. Return a concise helpful reply, 2-3 short actionable followUpPrompts (under 60 chars each) that suggest useful next refinements, and a complete linear workflow as structured output. Only use the provided node catalog. A workflow must contain exactly one trigger as its first step, then action steps. Use the start trigger for manual runs and schedule for timed runs. Never claim an unsupported capability. If the user only asks to explain or audit the workflow without changing it, or if required details are missing, set needsClarification=true, answer or ask one concise question in reply, and return steps=[]. Do not guess URLs, recipients, credentials, or personal data. For settings that use data from earlier nodes, write references exactly as {{ step_1.outputPath }} using a 1-based step number and an output path listed in the catalog. Keep at most eight action steps. The existing workflow is provided as ordered steps; when the user asks to edit, add, or remove a node, preserve the other existing steps and every setting they did not ask to change. Only replace the entire workflow when the user asks for a new or different workflow. Node IDs and positions are hidden from you; use step_N references for outputs. Existing workflow draft: ${currentGraph}\nNode catalog: ${JSON.stringify(catalog)}`
 
   let geminiResponse: Response
   try {
@@ -225,7 +229,12 @@ export async function POST(request: Request) {
   const text = result?.candidates?.[0]?.content?.parts?.find((part: { text?: string }) => part.text)?.text
   if (typeof text !== "string") return jsonError("Gemini returned an empty response. Please try again.", 502)
 
-  let generated: { reply: string; needsClarification: boolean; steps: DraftStep[] }
+  let generated: {
+    reply: string
+    needsClarification: boolean
+    followUpPrompts?: string[]
+    steps: DraftStep[]
+  }
   try {
     generated = JSON.parse(text)
   } catch {
@@ -235,10 +244,18 @@ export async function POST(request: Request) {
   if (typeof generated.reply !== "string" || typeof generated.needsClarification !== "boolean" || !Array.isArray(generated.steps)) {
     return jsonError("Gemini returned an invalid workflow draft. Please try again.", 502)
   }
-  if (generated.needsClarification) return Response.json({ reply: generated.reply })
+  const followUpPrompts = Array.isArray(generated.followUpPrompts)
+    ? generated.followUpPrompts.filter((item): item is string => typeof item === "string" && item.trim().length > 0).slice(0, 3)
+    : []
+
+  if (generated.needsClarification) {
+    return Response.json({ reply: generated.reply, followUpPrompts })
+  }
 
   const built = buildGraph(generated.steps)
-  if (!built.graph) return Response.json({ reply: built.error, needsClarification: true })
+  if (!built.graph) {
+    return Response.json({ reply: built.error, needsClarification: true, followUpPrompts })
+  }
 
-  return Response.json({ reply: generated.reply, graph: built.graph })
+  return Response.json({ reply: generated.reply, graph: built.graph, followUpPrompts })
 }

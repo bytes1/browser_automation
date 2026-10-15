@@ -4,11 +4,17 @@ import type {
   NodeType,
 } from "@/features/workflows/nodes/node-registry"
 import { act } from "./act"
+import { aiSynthesize } from "./ai-synthesize"
 import { extract } from "./extract"
 import { observe } from "./observe"
 import { openUrl } from "./open-url"
 import { sendEmail } from "./send-email"
-import { getQlooRecommendations, searchQlooEntities } from "./qloo"
+import {
+  compareQlooTasteOverlap,
+  getQlooDemographics,
+  getQlooRecommendations,
+  searchQlooEntities,
+} from "./qloo"
 
 function resultLimit(value: string | undefined) {
   const parsed = Number.parseInt(value ?? "8", 10)
@@ -39,6 +45,16 @@ export const nodeExecutors: Partial<Record<NodeType, NodeExecutor>> = {
     const { stagehand } = await getStagehand()
     return observe({ stagehand, instruction: values.instruction })
   },
+  "ai-synthesize": async ({ values }) => {
+    if (!values.instruction?.trim()) {
+      throw new Error("Enter a synthesis goal for the AI Cultural Synthesizer.")
+    }
+    return aiSynthesize({
+      format: values.format,
+      instruction: values.instruction.trim(),
+      contextData: values.contextData ?? "",
+    })
+  },
   "send-email": async ({ values }) => {
     return sendEmail({
       provider: values.provider,
@@ -62,6 +78,8 @@ export const nodeExecutors: Partial<Record<NodeType, NodeExecutor>> = {
       entityIds: values.entityIds,
       targetType: values.targetType,
       city: values.city,
+      vibeTags: values.vibeTags,
+      negativeSeeds: values.negativeSeeds,
       limit: resultLimit(values.limit),
     })
   },
@@ -72,7 +90,28 @@ export const nodeExecutors: Partial<Record<NodeType, NodeExecutor>> = {
       entityIds: values.entityIds,
       targetType: "urn:entity:place",
       city: values.city,
+      vibeTags: values.vibeTags,
       limit: resultLimit(values.limit),
+    })
+  },
+  "qloo-compare": async ({ values }) => {
+    if (!values.firstSeeds?.trim() || !values.secondSeeds?.trim()) {
+      throw new Error("Provide taste seeds for both Profile A and Profile B.")
+    }
+    return compareQlooTasteOverlap({
+      firstSeeds: values.firstSeeds,
+      secondSeeds: values.secondSeeds,
+      targetType: values.targetType || "urn:entity:place",
+      city: values.city,
+      limit: 6,
+    })
+  },
+  "qloo-demographics": async ({ values }) => {
+    if (!values.entityIds?.trim()) {
+      throw new Error("Enter at least one entity ID or brand/artist name.")
+    }
+    return getQlooDemographics({
+      entityIds: values.entityIds,
     })
   },
 } satisfies Record<ActionNodeType, NodeExecutor>

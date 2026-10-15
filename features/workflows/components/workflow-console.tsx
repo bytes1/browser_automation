@@ -246,11 +246,113 @@ type QlooOutputData = {
     searchQuery?: string
     city?: string | null
     query?: string
+    compatibilityScore?: string
+    topAgeGroup?: string
+    topGender?: string
+    ageBreakdown?: Record<string, number>
+    genderBreakdown?: Record<string, number>
+    personaSummary?: string
+}
+
+type SynthesisOutputData = {
+    headline?: string
+    keyTakeaways?: string[]
+    content?: string
+    actionRecommendation?: string
+    summary?: string
+}
+
+function SynthesisResultCard({ output }: { output: SynthesisOutputData }) {
+    const [viewMode, setViewMode] = useState<"visual" | "json">("visual")
+    const { headline, keyTakeaways, content, actionRecommendation } = output
+
+    if (viewMode === "json") {
+        return (
+            <div className="space-y-2">
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        onClick={() => setViewMode("visual")}
+                        className="text-[11px] font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                        ← Switch to Executive Brief
+                    </button>
+                </div>
+                <FormattedJson data={output} />
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                    <Sparkles className="size-3.5" />
+                    <span>AI Cultural &amp; Web Intelligence Brief</span>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => setViewMode("json")}
+                    className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                    View Raw JSON
+                </button>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-3.5">
+                {headline && (
+                    <div className="text-sm font-bold text-foreground">
+                        {headline}
+                    </div>
+                )}
+
+                {Array.isArray(keyTakeaways) && keyTakeaways.length > 0 && (
+                    <div className="space-y-1 rounded-md border border-border/60 bg-background/80 p-2.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                            Key Cultural &amp; Web Takeaways
+                        </div>
+                        <ul className="space-y-1 text-xs text-foreground">
+                            {keyTakeaways.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-1.5">
+                                    <span className="text-indigo-500">•</span>
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {content && (
+                    <div className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
+                        {content}
+                    </div>
+                )}
+
+                {actionRecommendation && (
+                    <div className="flex items-center justify-between gap-2 rounded bg-indigo-500/10 px-2.5 py-2 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                        <span>Recommended Action: {actionRecommendation}</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
 }
 
 function QlooTasteCard({ output }: { output: QlooOutputData }) {
     const [viewMode, setViewMode] = useState<"visual" | "json">("visual")
-    const { topPickName, topPickReason, entities, searchQuery, summary, city } = output
+    const {
+        topPickName,
+        topPickReason,
+        entities,
+        searchQuery,
+        summary,
+        city,
+        compatibilityScore,
+        topAgeGroup,
+        topGender,
+        ageBreakdown,
+        personaSummary,
+    } = output
 
     if (viewMode === "json") {
         return (
@@ -284,6 +386,65 @@ function QlooTasteCard({ output }: { output: QlooOutputData }) {
                     View Raw JSON
                 </button>
             </div>
+
+            {compatibilityScore && (
+                <div className="flex items-center justify-between rounded-lg border border-pink-500/30 bg-pink-500/10 px-3.5 py-2.5">
+                    <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-pink-600 dark:text-pink-300">
+                            Taste Overlap Score
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Cross-profile cultural bridge compatibility
+                        </div>
+                    </div>
+                    <span className="font-mono text-lg font-bold text-pink-600 dark:text-pink-300">
+                        {compatibilityScore}
+                    </span>
+                </div>
+            )}
+
+            {ageBreakdown && (
+                <div className="space-y-2.5 rounded-lg border border-purple-500/30 bg-purple-500/10 p-3.5">
+                    <div className="flex items-center justify-between">
+                        <span className="rounded bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                            👥 Audience Persona Cohort
+                        </span>
+                        {topAgeGroup && (
+                            <span className="font-mono text-xs font-semibold text-purple-700 dark:text-purple-300">
+                                {topAgeGroup} · {topGender}
+                            </span>
+                        )}
+                    </div>
+                    {personaSummary && (
+                        <p className="text-xs text-muted-foreground">
+                            {personaSummary}
+                        </p>
+                    )}
+                    <div className="space-y-1.5 pt-1">
+                        {Object.entries(ageBreakdown).map(([cohort, ratio]) => {
+                            const pct = Math.min(100, Math.max(4, Math.round(ratio * 100)))
+                            return (
+                                <div key={cohort} className="space-y-0.5">
+                                    <div className="flex justify-between text-[11px]">
+                                        <span className="capitalize text-muted-foreground">
+                                            {cohort.replaceAll("_", " ")}
+                                        </span>
+                                        <span className="font-mono font-medium text-foreground">
+                                            {pct}%
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-background/70">
+                                        <div
+                                            className="h-full rounded-full bg-purple-500"
+                                            style={{ width: `${pct}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
 
             {topPickName && (
                 <div className="rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/10 p-3.5 space-y-2">
@@ -320,30 +481,55 @@ function QlooTasteCard({ output }: { output: QlooOutputData }) {
                         Matched Cultural Entities ({entities.length})
                     </div>
                     <div className="divide-y divide-border/60">
-                        {entities.slice(0, 6).map((entity, i) => (
-                            <div key={entity.id || i} className="py-2 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
-                                <div className="min-w-0">
-                                    <div className="text-xs font-medium text-foreground truncate">
-                                        {i + 1}. {entity.name}
+                        {entities.slice(0, 6).map((entity, i) => {
+                            const pct =
+                                entity.affinity !== null && entity.affinity !== undefined
+                                    ? Math.min(100, Math.max(10, Math.round(entity.affinity * 100)))
+                                    : null
+                            const cleanType = entity.type
+                                ?.replace("urn:entity:", "")
+                                .replaceAll("_", " ")
+
+                            return (
+                                <div key={entity.id || i} className="py-2 first:pt-0 last:pb-0 space-y-1">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0 flex items-center gap-1.5">
+                                            <span className="text-xs font-medium text-foreground truncate">
+                                                {i + 1}. {entity.name}
+                                            </span>
+                                            {cleanType && cleanType !== "unknown" && (
+                                                <span className="rounded bg-muted px-1.5 py-0.2 text-[9px] uppercase text-muted-foreground">
+                                                    {cleanType}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {pct !== null && (
+                                            <span className="shrink-0 rounded-full bg-fuchsia-500/10 px-2 py-0.5 text-[10px] font-mono font-semibold text-fuchsia-600 dark:text-fuchsia-400">
+                                                {pct}%
+                                            </span>
+                                        )}
                                     </div>
                                     {entity.explanation && (
                                         <div className="text-[11px] text-muted-foreground truncate">
                                             {entity.explanation}
                                         </div>
                                     )}
+                                    {pct !== null && (
+                                        <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                                            <div
+                                                className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500"
+                                                style={{ width: `${pct}%` }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                                {entity.affinity !== null && entity.affinity !== undefined && (
-                                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-mono font-medium text-foreground">
-                                        {Math.round(entity.affinity * 100)}%
-                                    </span>
-                                )}
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </div>
             )}
 
-            {summary && (!entities || entities.length === 0) && (
+            {summary && (!entities || entities.length === 0) && !ageBreakdown && (
                 <div className="rounded-md border border-border bg-muted/40 p-3 font-mono text-xs text-foreground whitespace-pre-wrap">
                     {summary}
                 </div>
@@ -382,7 +568,17 @@ function StepDetailsPanel({
     const hasError = !!error || status === "failed"
     const isQlooStep =
         nodeType?.startsWith("qloo") ||
-        (typeof output === "object" && output !== null && ("entities" in output || "topPickName" in output))
+        (typeof output === "object" &&
+            output !== null &&
+            ("entities" in output ||
+                "topPickName" in output ||
+                "ageBreakdown" in output))
+    const isSynthesisStep =
+        nodeType === "ai-synthesize" ||
+        (typeof output === "object" &&
+            output !== null &&
+            "headline" in output &&
+            "keyTakeaways" in output)
 
     return (
         <div className="flex size-full flex-col overflow-y-auto">
@@ -452,6 +648,8 @@ function StepDetailsPanel({
                     {hasOutput ? (
                         isQlooStep ? (
                             <QlooTasteCard output={output as QlooOutputData} />
+                        ) : isSynthesisStep ? (
+                            <SynthesisResultCard output={output as SynthesisOutputData} />
                         ) : (
                             <FormattedJson data={output} />
                         )

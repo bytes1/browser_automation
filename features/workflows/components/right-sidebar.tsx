@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useReactFlow, useStore, type Edge } from "@xyflow/react"
 import { useLiveblocksFlow } from "@liveblocks/react-flow"
-import { Bot, CalendarClock, Layers, MapPin, MoreHorizontal, Play, Sparkles, Trash2, Unlink } from "lucide-react"
+import { Bot, CalendarClock, CheckCircle2, Globe, Layers, LoaderCircle, MapPin, MoreHorizontal, Play, Sparkles, Trash2, Unlink } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -153,6 +153,106 @@ function Field({
   )
 }
 
+// Live Qloo Entity Resolver inside the Inspector for qloo-search nodes
+function QlooSeedVerifier({
+  query,
+  entityType,
+}: {
+  query?: string
+  entityType?: string
+}) {
+  const [resolved, setResolved] = useState<
+    Array<{ id: string; name: string; type: string }> | null
+  >(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isVerifying, startVerify] = useTransition()
+
+  const canVerify = Boolean(query?.trim() && !query.includes("{{"))
+
+  const handleVerify = () => {
+    if (!canVerify) return
+    setError(null)
+    startVerify(async () => {
+      try {
+        const res = await fetch("/api/qloo/resolve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, entityType }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.error || "Could not verify Qloo entities.")
+        }
+        setResolved(data.entities ?? [])
+      } catch (err) {
+        setResolved(null)
+        setError(
+          err instanceof Error ? err.message : "Could not verify Qloo seeds."
+        )
+      }
+    })
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border border-fuchsia-500/30 bg-fuchsia-500/5 p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-fuchsia-600 dark:text-fuchsia-400">
+          <Sparkles className="size-3" />
+          Live Qloo Seed Lookup
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={!canVerify || isVerifying}
+          onClick={handleVerify}
+          className="h-6 px-2 text-[10px]"
+        >
+          {isVerifying ? (
+            <LoaderCircle className="size-3 animate-spin" />
+          ) : (
+            <CheckCircle2 className="size-3" />
+          )}
+          Verify in Qloo
+        </Button>
+      </div>
+
+      {!canVerify && (
+        <p className="text-[10px] text-muted-foreground">
+          {query?.includes("{{")
+            ? "Dynamic upstream web data will be resolved automatically during workflow execution."
+            : "Type artist, movie, brand, or venue names above to preview live Qloo entity IDs."}
+        </p>
+      )}
+
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
+
+      {resolved && resolved.length > 0 && (
+        <div className="space-y-1 pt-1">
+          {resolved.map((entity) => (
+            <div
+              key={entity.id}
+              className="flex items-center justify-between gap-2 rounded border border-border/70 bg-background px-2 py-1 text-[11px]"
+            >
+              <div className="min-w-0">
+                <div className="truncate font-medium text-foreground">
+                  {entity.name}
+                </div>
+                <div className="truncate font-mono text-[9px] text-muted-foreground">
+                  ID: {entity.id.slice(0, 18)}…
+                </div>
+              </div>
+              <span className="shrink-0 rounded bg-fuchsia-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-fuchsia-600 dark:text-fuchsia-300">
+                {entity.type}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // The Editor tab: one input per field on the selected node, or an empty state.
 function Inspector({ node }: { node: StepNodeType | undefined }) {
   const { updateNodeData, deleteElements, getNode } =
@@ -242,6 +342,13 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
               />
             </div>
           ))
+        )}
+
+        {type === "qloo-search" && (
+          <QlooSeedVerifier
+            query={values.query}
+            entityType={values.entityType}
+          />
         )}
 
         {/* Available upstream outputs — click to drop a token into the last
@@ -357,7 +464,9 @@ function Palette() {
     onEdgesChange(edges.map((item) => ({ type: "add" as const, item })))
   }
 
-  const loadTemplate = (templateType: "concierge" | "cross-domain" | "local") => {
+  const loadTemplate = (
+    templateType: "concierge" | "cross-domain" | "local" | "web-to-taste"
+  ) => {
     const existing = getNodes()
     const isCustomized = existing.some(
       (n) => n.id !== "start" && n.data?.type !== "start"
@@ -371,6 +480,112 @@ function Palette() {
 
     const { x, y, zoom } = getViewport()
     const center = { x: (width / 2 - x) / zoom, y: (height / 2 - y) / zoom }
+
+    if (templateType === "web-to-taste") {
+      const startId = crypto.randomUUID()
+      const openId = crypto.randomUUID()
+      const extractId = crypto.randomUUID()
+      const seedsId = crypto.randomUUID()
+      const recsId = crypto.randomUUID()
+      const synthId = crypto.randomUUID()
+
+      const newNodes: StepNodeType[] = [
+        {
+          id: startId,
+          type: "step",
+          position: { x: center.x - 650, y: center.y },
+          data: { type: "start", kind: "trigger", title: "Start", values: {} },
+        },
+        {
+          id: openId,
+          type: "step",
+          position: { x: center.x - 390, y: center.y },
+          data: {
+            type: "open-url",
+            kind: "action",
+            title: "Open Cultural Page",
+            values: {
+              url: "https://en.wikipedia.org/wiki/Studio_Ghibli",
+            },
+          },
+        },
+        {
+          id: extractId,
+          type: "step",
+          position: { x: center.x - 130, y: center.y },
+          data: {
+            type: "extract",
+            kind: "action",
+            title: "Extract Creators & Works",
+            values: {
+              instruction:
+                "Extract the top 3 iconic film titles or directors mentioned on this page as a comma-separated list",
+            },
+          },
+        },
+        {
+          id: seedsId,
+          type: "step",
+          position: { x: center.x + 130, y: center.y },
+          data: {
+            type: "qloo-search",
+            kind: "action",
+            title: "Auto-Resolve Qloo Seeds",
+            values: {
+              query: `{{ ${extractId}.data }}`,
+              entityType: "any",
+            },
+          },
+        },
+        {
+          id: recsId,
+          type: "step",
+          position: { x: center.x + 390, y: center.y },
+          data: {
+            type: "qloo-recommend",
+            kind: "action",
+            title: "Cross-Domain Brand Match",
+            values: {
+              entityIds: `{{ ${seedsId}.entityIds }}`,
+              targetType: "urn:entity:brand",
+              city: "",
+              vibeTags: "craft, minimalist, design",
+              negativeSeeds: "",
+              limit: "6",
+            },
+          },
+        },
+        {
+          id: synthId,
+          type: "step",
+          position: { x: center.x + 650, y: center.y },
+          data: {
+            type: "ai-synthesize",
+            kind: "action",
+            title: "Synthesize Sponsorship Brief",
+            values: {
+              format: "pitch",
+              instruction:
+                "Create a brand partnership & cultural affinity pitch deck brief combining the live web extraction and Qloo brand matches.",
+              contextData: `Web Extracted Entities: {{ ${extractId}.data }}\nResolved Qloo Seeds: {{ ${seedsId}.summary }}\nQloo Brand Recommendations:\n{{ ${recsId}.summary }}`,
+            },
+          },
+        },
+      ]
+
+      const newEdges = [
+        { id: crypto.randomUUID(), source: startId, target: openId },
+        { id: crypto.randomUUID(), source: openId, target: extractId },
+        { id: crypto.randomUUID(), source: extractId, target: seedsId },
+        { id: crypto.randomUUID(), source: seedsId, target: recsId },
+        { id: crypto.randomUUID(), source: recsId, target: synthId },
+      ]
+
+      replaceGraph(newNodes, newEdges)
+      setTimeout(() => fitView({ padding: 0.15 }), 50)
+      toast.success("Loaded 'Web-to-Taste Auto-Discovery' template!")
+      return
+    }
 
     if (templateType === "concierge") {
       const startId = crypto.randomUUID()
@@ -656,6 +871,16 @@ function Palette() {
           variant="secondary"
           size="sm"
           className="w-full justify-start text-xs font-medium"
+          onClick={() => loadTemplate("web-to-taste")}
+        >
+          <Globe className="size-3.5 text-emerald-500 shrink-0" />
+          <span className="truncate">Web-to-Taste Auto-Discovery</span>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-xs font-medium"
           onClick={() => loadTemplate("concierge")}
         >
           <Sparkles className="size-3.5 text-fuchsia-500 shrink-0" />
@@ -838,11 +1063,12 @@ export function RightSidebar({ workflowId }: { workflowId: string }) {
   const selected = useStore((s) => s.nodes.find((n) => n.selected)) as
     StepNodeType | undefined
 
-  // TODO: auto-switch to the Editor tab when the selection changes.
   const [prevSelectedId, setPrevSelectedId] = useState(selected?.id)
   if (selected && selected.id !== prevSelectedId) {
     setPrevSelectedId(selected.id)
-    setTab("editor")
+    if (tab !== "ai") {
+      setTab("editor")
+    }
   }
 
   return (
