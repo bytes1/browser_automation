@@ -3,7 +3,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import type { WorkflowGraph } from "@/db/schema"
+import type { WorkflowGraph } from "@/lib/db/schema"
 
 import { Canvas } from "./canvas"
 import { RightSidebar } from "./right-sidebar"

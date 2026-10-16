@@ -1,7 +1,7 @@
 import toposort from "toposort"
 import { logger, metadata, task } from "@trigger.dev/sdk"
 import Browserbase from "@browserbasehq/sdk"
-import { Stagehand, browserbase } from "@browserbasehq/stagehand"
+import { Stagehand, browserbase, type ModelName } from "@browserbasehq/stagehand"
 import {
     flush as flushNeatlogs,
     init as initNeatlogs,
@@ -236,7 +236,8 @@ export const runWorkflowTask = task({
             stagehand = await Stagehand.create({
                 browser,
                 model: {
-                    modelName: process.env.STAGEHAND_MODEL ?? "google/gemini-3.5-flash-lite",
+                    modelName: (process.env.STAGEHAND_MODEL ??
+                        "google/gemini-3.5-flash-lite") as ModelName,
                 },
                 // disablePino is completely removed in V4
             })
