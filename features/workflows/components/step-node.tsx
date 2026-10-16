@@ -3,13 +3,45 @@ import { Handle, Position, type NodeProps } from "@xyflow/react"
 
 import {
     nodeRegistry,
-  type NodeField,
+    type NodeField,
     type StepNodeType,
 } from "@/features/workflows/nodes/node-registry"
 import { useLatestRunSteps } from "@/features/workflows/components/workflow-runs-provider"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, CircleAlert, Clock3 } from "lucide-react"
+import { CheckCircle2, CircleAlert, Clock3, Globe, Sparkles } from "lucide-react"
+
+const BROWSER_STEP_TYPES = new Set(["open-url", "act", "extract", "observe"])
+
+function getStepOutputSummary(type: string, output: any): string | null {
+    if (!output || typeof output !== "object") return null
+
+    if (type.startsWith("qloo")) {
+        if (output.compatibilityScore) {
+            return `Overlap: ${output.compatibilityScore}${output.topPickName ? ` · ${output.topPickName}` : ""}`
+        }
+        if (output.topAgeGroup) {
+            return `Cohort: ${output.topAgeGroup} (${output.topGender ?? "balanced"})`
+        }
+        if (output.topPickName) {
+            return `⭐ ${output.topPickName}`
+        }
+    }
+
+    if (type === "ai-synthesize" && output.headline) {
+        return `✨ ${output.headline}`
+    }
+
+    if (type === "extract" && output.result) {
+        if (typeof output.result === "string") return output.result.slice(0, 60)
+        if (typeof output.result === "object") {
+            const firstVal = Object.values(output.result)[0]
+            if (typeof firstVal === "string") return firstVal.slice(0, 60)
+        }
+    }
+
+    return null
+}
 
 function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
     const { type, kind, title, values } = data
@@ -27,8 +59,9 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
     // Reflect this node's state in the latest run. A node is only "running" while
     // the run is actually live — once it ends, a node left marked running stops
     // spinning rather than hanging forever.
-    const { steps, isLive } = useLatestRunSteps()
-    const status = steps.find((step) => step.nodeId === id)?.status
+    const { steps, isLive, browserSession } = useLatestRunSteps()
+    const step = steps.find((s) => s.nodeId === id)
+    const status = step?.status
     const isRunning = status === "running" && isLive
     const isFailed = status === "failed"
     const statusLabel = isRunning
@@ -41,14 +74,17 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
               ? "Pending"
               : undefined
 
+    const isBrowserStep = BROWSER_STEP_TYPES.has(type)
+    const outputSummary = status === "done" ? getStepOutputSummary(type, step?.output) : null
+
     // A trigger starts the flow and takes no input, so it has no target handle.
     const hasTarget = kind !== "trigger"
 
     return (
         <div
             className={cn(
-                "min-w-50 max-w-80 rounded-(--radius) border-2 border-border bg-card text-card-foreground",
-                isRunning && "border-blue-500",
+                "min-w-50 max-w-80 rounded-(--radius) border-2 border-border bg-card text-card-foreground transition-shadow",
+                isRunning && "border-blue-500 shadow-md shadow-blue-500/10",
                 status === "done" && "border-emerald-500",
                 isFailed && "border-destructive",
                 selected && "ring-2 ring-ring ring-offset-2 ring-offset-background"
@@ -72,7 +108,7 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
                 >
                     {isRunning ? <Spinner className="size-4" /> : <Icon className="size-4" />}
                 </div>
-                <span className="text-sm font-semibold">{title}</span>
+                <span className="truncate text-sm font-semibold">{title}</span>
                 {statusLabel && (
                     <span
                         className={cn(
@@ -113,6 +149,35 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
                         ))}
                     </div>
                 </>
+            )}
+
+            {isRunning && isBrowserStep && browserSession && (
+                <div className="flex items-center justify-between gap-2 border-t border-blue-500/20 bg-blue-500/5 px-3 py-1.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                    <span className="flex items-center gap-1.5 truncate">
+                        <span className="size-1.5 animate-pulse rounded-full bg-blue-500" />
+                        <Globe className="size-3 shrink-0" />
+                        <span className="truncate">Cloud Browser Session Active</span>
+                    </span>
+                    <span className="font-mono text-[9px] opacity-80">
+                        {browserSession.sessionId.slice(0, 6)}
+                    </span>
+                </div>
+            )}
+
+            {outputSummary && (
+                <div className="flex items-center justify-between gap-2 border-t border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                    <span className="flex items-center gap-1.5 truncate">
+                        <Sparkles className="size-3 shrink-0 text-emerald-500" />
+                        <span className="truncate">{outputSummary}</span>
+                    </span>
+                    {step?.durationMs !== undefined && (
+                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                            {step.durationMs < 1000
+                                ? `${step.durationMs}ms`
+                                : `${(step.durationMs / 1000).toFixed(1)}s`}
+                        </span>
+                    )}
+                </div>
             )}
 
             <Handle

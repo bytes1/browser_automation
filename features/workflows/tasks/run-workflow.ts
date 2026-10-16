@@ -1,5 +1,6 @@
 import toposort from "toposort"
 import { logger, metadata, task } from "@trigger.dev/sdk"
+import Browserbase from "@browserbasehq/sdk"
 import { Stagehand, browserbase } from "@browserbasehq/stagehand"
 import {
     flush as flushNeatlogs,
@@ -102,6 +103,19 @@ export type RunStep = {
     error?: string
 }
 
+export type BrowserSessionInfo = {
+    sessionId: string
+    debuggerFullscreenUrl?: string
+    debuggerUrl?: string
+    sessionUrl: string
+    status: "live" | "completed"
+    currentUrl?: string
+    currentTitle?: string
+    startedAt: string
+}
+
+const BROWSER_NODE_TYPES = new Set(["open-url", "act", "extract", "observe"])
+
 export const runWorkflowTask = task({
     id: "run-workflow",
     run: async ({ workflowId, orgId }: { workflowId: string; orgId: string }) => {
@@ -132,6 +146,8 @@ export const runWorkflowTask = task({
             }
         })
 
+        let browserSession: BrowserSessionInfo | undefined
+
         const updateStep = (index: number, patch: Partial<RunStep>) => {
             // Always publish a fresh snapshot. Trigger.dev compares metadata
             // values, so mutating this array in place can hide later updates.
@@ -141,8 +157,10 @@ export const runWorkflowTask = task({
             metadata.set("steps", steps as any)
         }
 
-        const setStepStatus = (index: number, status: RunStep["status"]) => {
-            updateStep(index, { status })
+        const updateBrowserSession = (patch: Partial<BrowserSessionInfo>) => {
+            if (!browserSession) return
+            browserSession = { ...browserSession, ...patch }
+            metadata.set("browserSession", browserSession as any)
         }
 
         metadata.set("steps", steps as any)
@@ -186,10 +204,39 @@ export const runWorkflowTask = task({
                 throw error
             }
 
+            const sessionId = browser.sessionId
+            if (sessionId) {
+                let debuggerFullscreenUrl: string | undefined
+                let debuggerUrl: string | undefined
+
+                try {
+                    const bb = new Browserbase({ apiKey })
+                    const debugUrls = await bb.sessions.debug(sessionId)
+                    debuggerFullscreenUrl = debugUrls.debuggerFullscreenUrl
+                    debuggerUrl = debugUrls.debuggerUrl
+                } catch (debugError) {
+                    logger.warn("Could not fetch Browserbase live debugger URLs", {
+                        sessionId,
+                        error: debugError instanceof Error ? debugError.message : String(debugError),
+                    })
+                }
+
+                browserSession = {
+                    sessionId,
+                    debuggerFullscreenUrl,
+                    debuggerUrl,
+                    sessionUrl: `https://www.browserbase.com/sessions/${sessionId}`,
+                    status: "live",
+                    startedAt: new Date().toISOString(),
+                }
+                metadata.set("browserSession", browserSession as any)
+                await metadata.flush()
+            }
+
             stagehand = await Stagehand.create({
                 browser,
                 model: {
-                    modelName: "google/gemini-2.5-flash"
+                    modelName: process.env.STAGEHAND_MODEL ?? "google/gemini-3.5-flash-lite",
                 },
                 // disablePino is completely removed in V4
             })
@@ -267,6 +314,22 @@ export const runWorkflowTask = task({
                                 }
                             )
 
+                            // If this was a browser node and we have an active page, sync current URL & title
+                            if (page && browserSession && BROWSER_NODE_TYPES.has(node.data.type as string)) {
+                                try {
+                                    const [currentUrl, currentTitle] = await Promise.all([
+                                        page.url().catch(() => undefined),
+                                        page.title().catch(() => undefined),
+                                    ])
+                                    updateBrowserSession({
+                                        ...(currentUrl ? { currentUrl } : {}),
+                                        ...(currentTitle ? { currentTitle } : {}),
+                                    })
+                                } catch {
+                                    // Ignore transient page inspection errors
+                                }
+                            }
+
                             const durationMs = Date.now() - stepStartTime
                             updateStep(i, {
                                 status: "done",
@@ -280,8 +343,8 @@ export const runWorkflowTask = task({
                                 error instanceof Error
                                     ? error.message
                                     : typeof error === "object" && error !== null
-                                      ? JSON.stringify(error)
-                                      : String(error)
+                                        ? JSON.stringify(error)
+                                        : String(error)
 
                             updateStep(i, {
                                 status: "failed",
@@ -293,9 +356,16 @@ export const runWorkflowTask = task({
                         }
                     }
 
+                    if (browserSession) {
+                        updateBrowserSession({ status: "completed" })
+                    }
                     await metadata.flush()
-                    return { steps }
+                    return { steps, browserSession }
                 } finally {
+                    if (browserSession && browserSession.status !== "completed") {
+                        updateBrowserSession({ status: "completed" })
+                        await metadata.flush().catch(() => { })
+                    }
                     try {
                         await stagehand?.close()
                     } finally {

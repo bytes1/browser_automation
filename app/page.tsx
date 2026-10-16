@@ -261,6 +261,7 @@ export default function Home() {
             <a href="#features">Capabilities</a>
             <a href="#how-it-works">How it works</a>
             <a href="#templates">Templates</a>
+            <Link href="/docs">Docs</Link>
           </nav>
           <div className="header-actions">
             <Link className="sign-in-link" href="/sign-in">
@@ -294,12 +295,12 @@ export default function Home() {
             <Link className="button button-primary" href="/launch">
               Start building free <ArrowRight size={16} />
             </Link>
-            <a className="watch-link" href="#how-it-works">
+            <Link className="watch-link" href="/docs">
               <span>
                 <Play size={12} fill="currentColor" />
               </span>{" "}
-              Explore how it works
-            </a>
+              Read user docs &amp; guide
+            </Link>
           </div>
           <div className="hero-proof">
             <div className="proof-avatars">
@@ -620,6 +621,7 @@ export default function Home() {
           <a href="#features">Capabilities</a>
           <a href="#how-it-works">How it works</a>
           <a href="#templates">Templates</a>
+          <Link href="/docs">Docs</Link>
           <Link href="/sign-in">Sign in</Link>
           <Link href="/launch">
             Launch app <ArrowUpRight size={13} />

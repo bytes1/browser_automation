@@ -1,4 +1,4 @@
-﻿import { createClerkClient } from "@clerk/backend"
+import { createClerkClient } from "@clerk/backend"
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 
@@ -20,17 +20,14 @@ type UserInfo = {
  * same order as the input array. Unknown / missing users are returned as null.
  *
  * Called by the Liveblocks resolveUsers callback on the client.
- * Requires an authenticated Clerk user that belongs to an organisation.
  */
 export async function POST(request: Request): Promise<NextResponse> {
-    // 1. Require an authenticated user with an active org.
-    const { userId, orgId } = await auth()
+    const { userId } = await auth()
 
-    if (!userId || !orgId) {
+    if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // 2. Parse and validate the request body.
     let userIds: unknown
     try {
         ;({ userIds } = await request.json())
@@ -49,8 +46,6 @@ export async function POST(request: Request): Promise<NextResponse> {
         )
     }
 
-    // 3. Fetch all requested users in a single Clerk API call.
-    //    getUserList accepts up to 100 user IDs at once.
     const typedUserIds = userIds as string[]
 
     let clerkUsers: Map<string, { name: string; avatar?: string }>
@@ -72,7 +67,6 @@ export async function POST(request: Request): Promise<NextResponse> {
                     user.id,
                     {
                         name,
-                        // imageUrl is always present on the User resource
                         avatar: user.imageUrl || undefined,
                     },
                 ]
@@ -86,7 +80,6 @@ export async function POST(request: Request): Promise<NextResponse> {
         )
     }
 
-    // 4. Return results in the same order as the input, null for unknowns.
     const usersInfo: UserInfo[] = typedUserIds.map(
         (id) => clerkUsers.get(id) ?? null
     )

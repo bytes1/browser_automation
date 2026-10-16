@@ -14,18 +14,19 @@ const clerkClient = createClerkClient({
  *
  * Called automatically by the Liveblocks client when it needs to authenticate.
  * Issues a room-scoped Liveblocks access token after checking that the
- * requested workflow belongs to the user's active Clerk organization.
+ * requested workflow belongs to the user's active Clerk organization or personal workspace.
  */
 export async function POST(request: Request): Promise<NextResponse> {
     const { userId, orgId } = await auth()
+    const workspaceId = orgId ?? userId
 
-    if (!userId || !orgId) {
+    if (!userId || !workspaceId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     let roomId: unknown
     try {
-        ({ room: roomId } = await request.json())
+        ;({ room: roomId } = await request.json())
     } catch {
         return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
     }
@@ -36,7 +37,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     // Room IDs are workflow IDs. Check ownership on every auth request so a
     // user cannot request a token for another organization's workflow.
-    const workflow = await getWorkflow(orgId, roomId)
+    const workflow = await getWorkflow(workspaceId, roomId)
     if (!workflow) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
@@ -61,7 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // user for Liveblocks Permissions API access and does not grant room access.
     const session = liveblocks.prepareSession(userId, {
         userInfo,
-        organizationId: orgId,
+        organizationId: workspaceId,
     })
     session.allow(roomId, ["*:write"])
     const { body, status } = await session.authorize()

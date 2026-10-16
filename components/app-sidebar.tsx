@@ -1,6 +1,8 @@
 import * as React from "react"
+import Link from "next/link"
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs"
 import { auth } from "@clerk/nextjs/server"
+import { BookOpenIcon } from "lucide-react"
 
 import { AppSidebarThemeToggle } from "@/components/app-sidebar-theme-toggle"
 import {
@@ -8,6 +10,9 @@ import {
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { createWorkflowAction } from "@/features/workflows/actions"
@@ -17,14 +22,14 @@ import { listWorkflows } from "@/features/workflows/data"
 export async function AppSidebar({
     ...props
 }: React.ComponentProps<typeof Sidebar>) {
-    const { orgId } = await auth()
-    const workflows = orgId ? await listWorkflows(orgId) : []
+    const { orgId, userId } = await auth()
+    const workspaceId = orgId ?? userId
+    const workflows = workspaceId ? await listWorkflows(workspaceId) : []
 
     return (
         <Sidebar variant="inset" collapsible="icon" {...props}>
             <SidebarHeader className="flex-row items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0">
                 <OrganizationSwitcher
-                    hidePersonal
                     appearance={{
                         elements: {
                             rootBox: "min-w-0 group-data-[collapsible=icon]:!hidden",
@@ -41,6 +46,16 @@ export async function AppSidebar({
                 />
             </SidebarContent>
             <SidebarFooter className="gap-1 group-data-[collapsible=icon]:items-center">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip="Documentation & Guide">
+                            <Link href="/docs">
+                                <BookOpenIcon className="text-violet-500" />
+                                <span>Documentation</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
                 <AppSidebarThemeToggle />
                 <UserButton
                     appearance={{
@@ -55,4 +70,4 @@ export async function AppSidebar({
             </SidebarFooter>
         </Sidebar>
     )
-}
+}

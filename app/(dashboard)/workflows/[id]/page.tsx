@@ -18,19 +18,20 @@ export default async function Page({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const { orgId } = await auth()
-  if (!orgId) notFound()
+  const { orgId, userId } = await auth()
+  const workspaceId = orgId ?? userId
+  if (!workspaceId) notFound()
 
-  const workflow = await getWorkflow(orgId, id)
+  const workflow = await getWorkflow(workspaceId, id)
   if (!workflow) notFound()
 
   // Rooms are private by default under ID-token auth. Grant write access to the
-  // owning org, matching the `groupIds: [orgId]` issued by the auth endpoint.
+  // owning workspace, matching the `groupIds: [workspaceId]` issued by the auth endpoint.
   await liveblocks.getOrCreateRoom(id, {
-    organizationId: orgId,
+    organizationId: workspaceId,
     defaultAccesses: [],
     groupsAccesses: {
-      [orgId]: ["room:write"],
+      [workspaceId]: ["room:write"],
     },
     metadata: {
       title: workflow.name,
@@ -55,7 +56,7 @@ export default async function Page({
       <Room roomId={id}>
         <ReactFlowProvider>
           <WorkflowRunsProvider workflowId={id} accessToken={runsToken}>
-            <WorkflowShell workflowId={id} />
+            <WorkflowShell workflowId={id} initialGraph={workflow.graph} />
           </WorkflowRunsProvider>
         </ReactFlowProvider>
       </Room>

@@ -556,6 +556,8 @@ export async function compareQlooTasteOverlap({
 
   return {
     compatibilityScore,
+    firstProfileSeeds: cleanSeedInputs(firstSeeds),
+    secondProfileSeeds: cleanSeedInputs(secondSeeds),
     entities: bridge.entities,
     names: bridge.names,
     topPickName: bridge.topPickName,

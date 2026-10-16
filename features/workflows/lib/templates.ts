@@ -2,7 +2,7 @@ import type { Edge } from "@xyflow/react"
 import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 import type { WorkflowGraph } from "@/lib/db/schema"
 
-export type TemplateId = "concierge" | "cross-domain" | "local"
+export type TemplateId = "web-to-taste" | "concierge" | "cross-domain" | "local"
 
 export interface WorkflowTemplate {
   id: TemplateId
@@ -21,6 +21,117 @@ export interface WorkflowTemplate {
 }
 
 export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
+  "web-to-taste": {
+    id: "web-to-taste",
+    name: "Web-to-Taste Auto-Discovery",
+    title: "Web-to-Taste Brand & Pitch Pipeline",
+    description:
+      "Open Cultural Page → Stagehand AI Extract → Qloo Entity Resolution → Cross-Domain Brand Match → Gemini Executive Pitch Brief.",
+    badge: "Flagship 6-Step",
+    buildGraph: (center = { x: 300, y: 200 }, existingStartId = "start") => {
+      const startId = existingStartId
+      const openId = crypto.randomUUID()
+      const extractId = crypto.randomUUID()
+      const seedsId = crypto.randomUUID()
+      const recsId = crypto.randomUUID()
+      const synthId = crypto.randomUUID()
+
+      const nodes: StepNodeType[] = [
+        {
+          id: startId,
+          type: "step",
+          position: { x: center.x - 650, y: center.y },
+          data: { type: "start", kind: "trigger", title: "Start", values: {} },
+        },
+        {
+          id: openId,
+          type: "step",
+          position: { x: center.x - 390, y: center.y },
+          data: {
+            type: "open-url",
+            kind: "action",
+            title: "Open Cultural Page",
+            values: {
+              url: "https://en.wikipedia.org/wiki/Studio_Ghibli",
+            },
+          },
+        },
+        {
+          id: extractId,
+          type: "step",
+          position: { x: center.x - 130, y: center.y },
+          data: {
+            type: "extract",
+            kind: "action",
+            title: "Extract Creators & Works",
+            values: {
+              instruction:
+                "Extract the top 3 iconic film titles or directors mentioned on this page as a comma-separated list",
+            },
+          },
+        },
+        {
+          id: seedsId,
+          type: "step",
+          position: { x: center.x + 130, y: center.y },
+          data: {
+            type: "qloo-search",
+            kind: "action",
+            title: "Auto-Resolve Qloo Seeds",
+            values: {
+              query: `{{ ${extractId}.data }}`,
+              entityType: "any",
+            },
+          },
+        },
+        {
+          id: recsId,
+          type: "step",
+          position: { x: center.x + 390, y: center.y },
+          data: {
+            type: "qloo-recommend",
+            kind: "action",
+            title: "Cross-Domain Brand Match",
+            values: {
+              entityIds: `{{ ${seedsId}.entityIds }}`,
+              targetType: "urn:entity:brand",
+              city: "",
+              vibeTags: "craft, minimalist, design",
+              negativeSeeds: "",
+              limit: "6",
+            },
+          },
+        },
+        {
+          id: synthId,
+          type: "step",
+          position: { x: center.x + 650, y: center.y },
+          data: {
+            type: "ai-synthesize",
+            kind: "action",
+            title: "Synthesize Sponsorship Brief",
+            values: {
+              format: "pitch",
+              instruction:
+                "Create a brand partnership & cultural affinity pitch deck brief combining the live web extraction and Qloo brand matches.",
+              contextData: `Web Extracted Entities: {{ ${extractId}.data }}\nResolved Qloo Seeds: {{ ${seedsId}.summary }}\nQloo Brand Recommendations:\n{{ ${recsId}.summary }}`,
+            },
+          },
+        },
+      ]
+
+      const edges: Edge[] = [
+        { id: crypto.randomUUID(), source: startId, target: openId },
+        { id: crypto.randomUUID(), source: openId, target: extractId },
+        { id: crypto.randomUUID(), source: extractId, target: seedsId },
+        { id: crypto.randomUUID(), source: seedsId, target: recsId },
+        { id: crypto.randomUUID(), source: recsId, target: synthId },
+      ]
+
+      return { startId, nodes, edges }
+    },
+  },
+
   concierge: {
     id: "concierge",
     name: "Autonomous Cultural Concierge",

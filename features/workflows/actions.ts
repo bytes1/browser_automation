@@ -5,7 +5,7 @@ import { runs, schedules, tasks } from "@trigger.dev/sdk"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow";
+import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow"
 
 import { liveblocks } from "@/lib/liveblocks"
 import {
@@ -32,6 +32,15 @@ import {
 
 const scheduledWorkflowTaskId = "run-scheduled-workflow"
 
+async function getWorkspaceId(): Promise<string> {
+    const { orgId, userId } = await auth()
+    const workspaceId = orgId ?? userId
+    if (!workspaceId) {
+        throw new Error("Please sign in to manage workflows.")
+    }
+    return workspaceId
+}
+
 async function removeWorkflowTrigger(ref: WorkflowTriggerRef | null) {
     if (!ref) return
     if (ref.kind === "schedule") {
@@ -56,11 +65,7 @@ async function removeLegacyWorkflowSchedules(workflowId: string, orgId: string) 
 }
 
 export async function createWorkflowAction(name?: string, templateId?: TemplateId) {
-    const { orgId } = await auth()
-
-    if (!orgId) {
-        throw new Error("No active organization")
-    }
+    const orgId = await getWorkspaceId()
 
     let graph: WorkflowGraph | undefined
     let workflowName = name?.trim()
@@ -78,16 +83,13 @@ export async function createWorkflowAction(name?: string, templateId?: TemplateI
 
     const workflow = await createWorkflow(orgId, workflowName, graph)
 
+    revalidatePath("/launch")
     revalidatePath("/workflows", "layout")
     redirect(`/workflows/${workflow.id}`)
 }
 
 export async function deleteWorkflowAction(id: string) {
-    const { orgId } = await auth()
-
-    if (!orgId) {
-        throw new Error("No active organization")
-    }
+    const orgId = await getWorkspaceId()
 
     const existing = await getWorkflow(orgId, id)
     const triggerRef = getWorkflowTriggerRef(existing?.graph)
@@ -100,10 +102,11 @@ export async function deleteWorkflowAction(id: string) {
     }
 
     // The workflow id doubles as its Liveblocks room id — clean it up too.
-    await liveblocks.deleteRoom(id)
+    await liveblocks.deleteRoom(id).catch(() => {})
 
+    revalidatePath("/launch")
     revalidatePath("/workflows", "layout")
-    redirect("/")
+    redirect("/launch")
 }
 
 export async function saveWorkflowScheduleAction({
@@ -113,8 +116,7 @@ export async function saveWorkflowScheduleAction({
     id: string
     graph: WorkflowGraph
 }) {
-    const { orgId } = await auth()
-    if (!orgId) throw new Error("No active organization")
+    const orgId = await getWorkspaceId()
 
     const existing = await getWorkflow(orgId, id)
     if (!existing) throw new Error("Workflow not found")
@@ -141,7 +143,7 @@ export async function saveWorkflowScheduleAction({
                     delay: nextRun,
                     tags: [`workflow:${id}`],
                     idempotencyKey: `workflow-once:${orgId}:${id}:${nextRun.toISOString()}`,
-                },
+                }
             )
             newRef = { kind: "run", id: handle.id }
         } else {
@@ -194,11 +196,7 @@ export async function runWorkflowAction({
     id: string
     graph: WorkflowGraph
 }) {
-    const { orgId } = await auth()
-
-    if (!orgId) {
-        throw new Error("No active organization")
-    }
+    const orgId = await getWorkspaceId()
 
     await saveWorkflowGraph({ orgId, id, graph })
 
@@ -215,7 +213,6 @@ export async function runWorkflowAction({
 }
 
 export async function cancelWorkflowRunAction(runId: string) {
-    const { orgId } = await auth()
-    if (!orgId) throw new Error("No active organization")
+    await getWorkspaceId()
     await runs.cancel(runId)
 }

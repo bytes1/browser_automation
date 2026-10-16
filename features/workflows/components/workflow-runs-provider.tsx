@@ -3,7 +3,11 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
 import { useRealtimeRun, useRealtimeRunsWithTag } from "@trigger.dev/react-hooks"
 
-import type { RunStep, runWorkflowTask } from "@/features/workflows/tasks/run-workflow"
+import type {
+    BrowserSessionInfo,
+    RunStep,
+    runWorkflowTask,
+} from "@/features/workflows/tasks/run-workflow"
 
 export type WorkflowRun = ReturnType<
     typeof useRealtimeRunsWithTag<typeof runWorkflowTask>
@@ -29,6 +33,22 @@ export function getRunSteps(run: WorkflowRun): RunStep[] {
         return metadataSteps as unknown as RunStep[]
     }
     return []
+}
+
+export function getRunBrowserSession(run: WorkflowRun): BrowserSessionInfo | undefined {
+    const outputSession = run.output?.browserSession
+    if (outputSession && typeof outputSession === "object" && "sessionId" in outputSession) {
+        return outputSession as BrowserSessionInfo
+    }
+    const metadataSession = run.metadata?.browserSession
+    if (
+        metadataSession &&
+        typeof metadataSession === "object" &&
+        "sessionId" in metadataSession
+    ) {
+        return metadataSession as unknown as BrowserSessionInfo
+    }
+    return undefined
 }
 
 interface WorkflowRunsProviderProps {
@@ -119,6 +139,7 @@ interface LatestRunSteps {
     steps: RunStep[]
     // True while the latest run is queued or executing — i.e. still producing steps.
     isLive: boolean
+    browserSession?: BrowserSessionInfo
 }
 
 // The steps of the most recent run, plus whether it's still going. Prefer the
@@ -138,7 +159,8 @@ export function useLatestRunSteps(): LatestRunSteps {
 
         const isLive = run.status === "QUEUED" || run.status === "EXECUTING"
         const steps = getRunSteps(run)
+        const browserSession = getRunBrowserSession(run)
 
-        return { steps, isLive }
+        return { steps, isLive, browserSession }
     }, [runs, activeRun, isWatchingRun])
 }

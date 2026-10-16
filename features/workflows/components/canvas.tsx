@@ -1,6 +1,7 @@
 "use client"
 
 import { useSyncExternalStore } from "react"
+import Link from "next/link"
 import { useTheme } from "next-themes"
 import {
   Controls,
@@ -12,14 +13,16 @@ import {
   Panel,
 } from "@xyflow/react"
 import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
-import { AvatarStack } from "@liveblocks/react-ui";
+import { AvatarStack } from "@liveblocks/react-ui"
+import { BookOpenIcon } from "lucide-react"
 
+import type { WorkflowGraph } from "@/lib/db/schema"
 import { StepNode } from "@/features/workflows/components/step-node"
 import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 
 import "@xyflow/react/dist/style.css"
-import "@liveblocks/react-ui/styles.css";
-import "@liveblocks/react-flow/styles.css";
+import "@liveblocks/react-ui/styles.css"
+import "@liveblocks/react-flow/styles.css"
 
 const nodeTypes: NodeTypes = { step: StepNode }
 
@@ -34,7 +37,7 @@ const initialNodes: StepNodeType[] = [
 
 const initialEdges: Edge[] = []
 
-const emptySubscribe = () => () => { }
+const emptySubscribe = () => () => {}
 
 // False during server render and hydration, true after mount. Keeps the
 // server and initial client render identical to avoid a hydration mismatch.
@@ -46,7 +49,11 @@ function useMounted() {
   )
 }
 
-export function Canvas() {
+interface CanvasProps {
+  initialGraph?: WorkflowGraph | null
+}
+
+export function Canvas({ initialGraph }: CanvasProps) {
   const { resolvedTheme } = useTheme()
   const mounted = useMounted()
   const colorMode: ColorMode = mounted
@@ -61,8 +68,12 @@ export function Canvas() {
     onDelete,
   } = useLiveblocksFlow({
     suspense: true,
-    nodes: { initial: initialNodes },
-    edges: { initial: initialEdges },
+    nodes: {
+      initial: initialGraph?.nodes?.length ? initialGraph.nodes : initialNodes,
+    },
+    edges: {
+      initial: initialGraph?.edges ?? initialEdges,
+    },
   })
 
   return (
@@ -94,7 +105,14 @@ export function Canvas() {
       >
         <Controls />
         <Cursors />
-        <Panel position="top-right">
+        <Panel position="top-right" className="flex items-center gap-2">
+          <Link
+            href="/docs"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/90 px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs backdrop-blur-xs transition-colors hover:border-violet-500/40 hover:bg-accent"
+          >
+            <BookOpenIcon className="size-3.5 text-violet-500" />
+            <span>Docs &amp; Guide</span>
+          </Link>
           <AvatarStack />
         </Panel>
       </ReactFlow>
