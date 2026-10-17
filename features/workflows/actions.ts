@@ -143,6 +143,7 @@ export async function saveWorkflowScheduleAction({
                     delay: nextRun,
                     tags: [`workflow:${id}`],
                     idempotencyKey: `workflow-once:${orgId}:${id}:${nextRun.toISOString()}`,
+                    externalDeploymentId: null,
                 }
             )
             newRef = { kind: "run", id: handle.id }
@@ -203,7 +204,10 @@ export async function runWorkflowAction({
     const handle = await tasks.trigger<typeof runWorkflowTask>(
         "run-workflow",
         { workflowId: id, orgId },
-        { tags: [`workflow:${id}`] }
+        {
+            tags: [`workflow:${id}`],
+            externalDeploymentId: null,
+        }
     )
 
     return {
