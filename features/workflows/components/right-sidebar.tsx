@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useReactFlow, useStore, type Edge } from "@xyflow/react"
 import { useLiveblocksFlow } from "@liveblocks/react-flow"
-import { Bot, CalendarClock, CheckCircle2, Globe, Layers, LoaderCircle, MapPin, MoreHorizontal, Play, Sparkles, Trash2, Unlink } from "lucide-react"
+import { AudioLines, Bot, CalendarClock, CheckCircle2, Globe, Layers, LoaderCircle, MapPin, MoreHorizontal, Play, Sparkles, Trash2, Unlink } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -253,6 +253,245 @@ function QlooSeedVerifier({
   )
 }
 
+const KNOWN_CITIES = [
+  "Tokyo",
+  "New York",
+  "London",
+  "Paris",
+  "Kyoto",
+  "Seoul",
+  "Berlin",
+  "Los Angeles",
+  "San Francisco",
+  "Austin",
+  "Chicago",
+  "Toronto",
+  "Barcelona",
+  "Lisbon",
+  "Amsterdam",
+  "Singapore",
+  "Melbourne",
+  "Mumbai",
+  "Bengaluru",
+]
+
+const KNOWN_VIBES = [
+  "indie",
+  "cozy",
+  "vinyl",
+  "speakeasy",
+  "minimalist",
+  "brutalist",
+  "craft",
+  "avant-garde",
+  "late-night",
+  "rooftop",
+  "omakase",
+  "third-wave coffee",
+  "underground",
+  "boutique",
+  "quiet",
+  "jazz",
+]
+
+function parseWisprVibeSentence(
+  sentence: string,
+  nodeType: NodeType,
+  currentValues: Record<string, string>
+): Record<string, string> {
+  const next = { ...currentValues }
+  const clean = sentence.trim()
+  if (!clean) return next
+
+  // 1. Detect negative / dislike clause ("avoid ...", "no ...", "without ...", "exclude ...")
+  let mainClause = clean
+  const negMatch = clean.match(
+    /\b(?:avoid|excluding|exclude|without|no)\s+([^.;]+)$/i
+  )
+  if (negMatch?.[1]) {
+    const negSeeds = negMatch[1].trim().replace(/\.$/, "")
+    if (nodeType === "qloo-recommend") {
+      next.negativeSeeds = negSeeds
+    }
+    mainClause = clean.slice(0, negMatch.index).trim()
+  }
+
+  // 2. Detect city
+  for (const city of KNOWN_CITIES) {
+    const regex = new RegExp(`\\b${city}\\b`, "i")
+    if (regex.test(mainClause)) {
+      if (
+        nodeType === "qloo-recommend" ||
+        nodeType === "qloo-local" ||
+        nodeType === "qloo-compare"
+      ) {
+        next.city = city
+      }
+      break
+    }
+  }
+
+  // 3. Detect category URN
+  const lower = mainClause.toLowerCase()
+  const detectedCategory =
+    /\b(brand|brands|fashion|apparel|label)\b/.test(lower)
+      ? "urn:entity:brand"
+      : /\b(book|books|author|novel|reading)\b/.test(lower)
+        ? "urn:entity:book"
+        : /\b(movie|movies|film|films|cinema)\b/.test(lower)
+          ? "urn:entity:movie"
+          : /\b(podcast|podcasts)\b/.test(lower)
+            ? "urn:entity:podcast"
+            : /\b(artist|artists|music|musician|band)\b/.test(lower)
+              ? "urn:entity:artist"
+              : /\b(place|places|venue|venues|bar|bars|cafe|coffee|restaurant|dining|spots)\b/.test(
+                    lower
+                  )
+                ? "urn:entity:place"
+                : null
+
+  if (detectedCategory) {
+    if (nodeType === "qloo-recommend" || nodeType === "qloo-compare") {
+      next.targetType = detectedCategory
+    } else if (nodeType === "qloo-search") {
+      next.entityType = detectedCategory
+    }
+  }
+
+  // 4. Detect mood / vibe tags
+  const matchedVibes = KNOWN_VIBES.filter((vibe) =>
+    lower.includes(vibe.toLowerCase())
+  )
+  if (
+    matchedVibes.length > 0 &&
+    (nodeType === "qloo-recommend" || nodeType === "qloo-local")
+  ) {
+    next.vibeTags = matchedVibes.join(", ")
+  }
+
+  // 5. Extract seed entities ("for fans of ...", "based on ...", "like ...", or quoted/capitalized phrases)
+  const seedMatch = mainClause.match(
+    /\b(?:fans of|based on|aligned with|who love|who likes?|like|seeds?:?)\s+([^.;]+)$/i
+  )
+  const rawSeedSegment = (seedMatch?.[1] ?? mainClause)
+    .replace(/\b(?:in|at|around|near)\s+[A-Z][a-zA-Z\s]+$/, "")
+    .replace(/\b(?:and|or)\b/gi, ",")
+    .replace(/[.;]+$/, "")
+    .trim()
+
+  if (rawSeedSegment) {
+    if (nodeType === "qloo-search") {
+      next.query = rawSeedSegment
+    } else if (
+      (nodeType === "qloo-recommend" || nodeType === "qloo-local") &&
+      !currentValues.entityIds?.includes("{{")
+    ) {
+      next.entityIds = rawSeedSegment
+    } else if (nodeType === "qloo-compare") {
+      const vsSplit = rawSeedSegment.split(/\b(?:vs\.?|versus|compared to|and)\b/i)
+      if (vsSplit.length >= 2) {
+        next.firstSeeds = vsSplit[0].trim()
+        next.secondSeeds = vsSplit.slice(1).join(", ").trim()
+      }
+    }
+  }
+
+  return next
+}
+
+function WisprVibeDictation({
+  nodeType,
+  values,
+  onApplyValues,
+}: {
+  nodeType: NodeType
+  values: Record<string, string>
+  onApplyValues: (nextValues: Record<string, string>) => void
+}) {
+  const [utterance, setUtterance] = useState("")
+
+  const handleApply = (raw = utterance) => {
+    if (!raw.trim()) return
+    const next = parseWisprVibeSentence(raw, nodeType, values)
+    onApplyValues(next)
+    setUtterance("")
+    toast.success("Parsed Wispr Flow dictation into node fields!")
+  }
+
+  return (
+    <div className="space-y-1.5 rounded-lg border border-violet-500/30 bg-violet-500/5 p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-600 dark:text-violet-300">
+          <AudioLines className="size-3.5" />
+          Dictate Vibe with Wispr Flow
+        </span>
+        <span className="text-[9px] text-muted-foreground">
+          Auto-fills fields
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={utterance}
+          onChange={(e) => {
+            const val = e.target.value
+            const delta = val.length - utterance.length
+            setUtterance(val)
+            // Auto-parse when Wispr Flow Desktop injects a full sentence burst
+            if (delta >= 16 && val.trim().length >= 16) {
+              handleApply(val)
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault()
+              handleApply()
+            }
+          }}
+          placeholder="Speak e.g. 'Cozy vinyl bars in Tokyo for fans of Radiohead, avoid tourist traps'"
+          className="h-7 text-[11px]"
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={!utterance.trim()}
+          onClick={() => handleApply()}
+          className="h-7 shrink-0 px-2 text-[10px]"
+        >
+          Fill
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function replaceSpokenTokens(
+  input: string,
+  connections: Array<{ token: string; label: string }>
+): string {
+  if (connections.length === 0) return input
+  let result = input
+
+  const spokenPatterns: Array<{ regex: RegExp; pathSuffix: string }> = [
+    { regex: /\b(?:insert|pipe)\s+entity\s+ids?\b/gi, pathSuffix: ".entityIds }}" },
+    { regex: /\b(?:insert|pipe)\s+top\s+pick\s+name\b/gi, pathSuffix: ".topPickName }}" },
+    { regex: /\b(?:insert|pipe)\s+top\s+pick\s+reason\b/gi, pathSuffix: ".topPickReason }}" },
+    { regex: /\b(?:insert|pipe)\s+extracted\s+data\b/gi, pathSuffix: ".data }}" },
+    { regex: /\b(?:insert|pipe)\s+search\s+query\b/gi, pathSuffix: ".searchQuery }}" },
+    { regex: /\b(?:insert|pipe)\s+summary\b/gi, pathSuffix: ".summary }}" },
+  ]
+
+  for (const { regex, pathSuffix } of spokenPatterns) {
+    if (regex.test(result)) {
+      const matchConn = connections.find((c) => c.token.endsWith(pathSuffix))
+      if (matchConn) {
+        result = result.replace(regex, matchConn.token)
+      }
+    }
+  }
+  return result
+}
+
 // The Editor tab: one input per field on the selected node, or an empty state.
 function Inspector({ node }: { node: StepNodeType | undefined }) {
   const { updateNodeData, deleteElements, getNode } =
@@ -292,6 +531,19 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
   return (
     <Section title={title} icon={<NodeIcon type={type} />}>
       <div className="flex flex-col gap-3 p-3">
+        {(type === "qloo-search" ||
+          type === "qloo-recommend" ||
+          type === "qloo-local" ||
+          type === "qloo-compare") && (
+          <WisprVibeDictation
+            nodeType={type}
+            values={values}
+            onApplyValues={(nextValues) =>
+              updateNodeData(node.id, { values: nextValues })
+            }
+          />
+        )}
+
         {def.fields.length === 0 ? (
           <p className="text-xs text-muted-foreground">No properties</p>
         ) : (
@@ -320,7 +572,8 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
                     : field.defaultValue ?? "")
                 }
                 onFocus={() => setActiveFieldKey(field.key)}
-                onChange={(value) => {
+                onChange={(rawValue) => {
+                  const value = replaceSpokenTokens(rawValue, connections)
                   const nextValues = { ...values, [field.key]: value }
                   if (field.key === "frequency") {
                     for (const definition of def.fields) {
@@ -863,7 +1116,7 @@ function Palette() {
         <div className="flex items-center justify-between text-xs font-semibold text-foreground">
           <div className="flex items-center gap-1.5">
             <Sparkles className="size-3.5 text-fuchsia-500" />
-            <span>Qloo Hackathon Templates</span>
+            <span>Starter Workflow Blueprints</span>
           </div>
         </div>
         <Button

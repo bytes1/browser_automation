@@ -1,4 +1,4 @@
-import { defineConfig } from "@trigger.dev/sdk";
+import { defineConfig } from "@trigger.dev/sdk"
 
 export default defineConfig({
   project: "proj_xtzahrhxemruvzoehzmt",
@@ -18,11 +18,11 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ["features"],
+  dirs: ["features/workflows/tasks"],
   build: {
     // Stagehand locates its bundled extension relative to its package file.
     // Keeping it external preserves that package-relative asset path in the
     // Trigger.dev worker instead of resolving it from the generated bundle.
     external: ["@browserbasehq/stagehand"],
   },
-});
+})

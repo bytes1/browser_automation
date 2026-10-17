@@ -42,8 +42,8 @@ const SECTIONS = [
   { id: "architecture", label: "2. How Browsevibe Works", icon: Layers },
   { id: "nodes", label: "3. Node Catalog (12 Nodes)", icon: Workflow },
   { id: "piping", label: "4. Data Piping {{ }}", icon: GitCompareArrows },
-  { id: "ai-builder", label: "5. AI Agent Builder", icon: Bot },
-  { id: "qloo-guide", label: "6. Qloo Taste AI™ Guide", icon: Sparkles },
+  { id: "ai-builder", label: "5. Wispr Flow & AI Builder", icon: Bot },
+  { id: "qloo-guide", label: "6. Cultural Taste AI Guide", icon: Sparkles },
   { id: "console", label: "7. Live Console & Replay", icon: MonitorPlay },
   { id: "templates", label: "8. Starter Blueprints", icon: Compass },
   { id: "setup", label: "9. Local Setup & Env", icon: Terminal },
@@ -214,7 +214,7 @@ export default function DocsPage() {
             <div className="max-w-3xl space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-600 dark:text-violet-300">
                 <Sparkles className="size-3.5" />
-                Complete New-User &amp; Judge Guide · Qloo Hackathon Edition
+                Complete User &amp; Developer Guide · Voice, Browser &amp; Cultural AI Studio
               </div>
               <h1 className="text-2xl font-bold tracking-tight sm:text-4xl">
                 Welcome to Browsevibe
@@ -223,12 +223,16 @@ export default function DocsPage() {
                 Browsevibe is a visual, multiplayer AI workflow studio that
                 combines{" "}
                 <strong className="font-medium text-foreground">
-                  Qloo&apos;s Taste AI™ cultural affinity graph
-                </strong>{" "}
-                with{" "}
+                  Wispr Flow voice-to-workflow control
+                </strong>
+                ,{" "}
                 <strong className="font-medium text-foreground">
                   self-healing cloud stealth browsers (Browserbase + Stagehand
                   v4)
+                </strong>
+                ,{" "}
+                <strong className="font-medium text-foreground">
+                  Qloo&apos;s Taste AI™ cultural affinity graph
                 </strong>
                 ,{" "}
                 <strong className="font-medium text-foreground">
@@ -302,7 +306,7 @@ export default function DocsPage() {
                     <li>
                       Or inside any open canvas, go to the right sidebar →{" "}
                       <strong>Toolbar</strong> tab →{" "}
-                      <strong>Qloo Hackathon Templates</strong>.
+                      <strong>Starter Workflow Blueprints</strong>.
                     </li>
                     <li>
                       Click the{" "}
@@ -723,22 +727,60 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* 5. AI AGENT BUILDER */}
+          {/* 5. WISPR FLOW & AI AGENT BUILDER */}
           <section id="ai-builder" className="scroll-mt-20 space-y-5">
             <div className="space-y-1">
               <span className="text-xs font-semibold tracking-wider text-violet-500 uppercase">
                 Section 05
               </span>
               <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-                Conversational AI Agent Builder Guide
+                Wispr Flow Voice Studio &amp; Conversational AI Builder
               </h2>
               <p className="text-sm text-muted-foreground">
-                Open the <strong>AI</strong> tab in the right sidebar to build,
-                edit, explain, or optimize workflows using plain English.
+                Build, edit, and configure workflows hands-free using{" "}
+                <strong>Wispr Flow Desktop</strong> on the canvas or chat in the{" "}
+                <strong>AI</strong> sidebar tab.
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Sparkles className="size-4 text-violet-500" />
+                  Floating Wispr Flow Voice Bar (<code>⌘K</code> / <code>Ctrl+K</code>)
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Press <code>⌘K</code> (or click{" "}
+                  <strong>Speak with Wispr Flow</strong> at the bottom of the
+                  canvas), hold your Wispr Flow Desktop hotkey, and speak any
+                  workflow. With <strong>Auto-Build On</strong>, the studio
+                  detects when Wispr Flow finishes pasting your dictated sentence
+                  and automatically builds &amp; live-syncs the workflow onto the
+                  canvas hands-free!
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Wand2 className="size-4 text-fuchsia-500" />
+                  One-Shot Vibe Dictation &amp; Spoken <code>{"{{ }}"}</code> Tokens
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  In the Node Editor, use the{" "}
+                  <strong>Dictate Vibe with Wispr Flow</strong> box to speak one
+                  sentence (e.g.{" "}
+                  <em>
+                    &ldquo;Cozy vinyl bars in Tokyo for fans of Radiohead, avoid
+                    tourist traps&rdquo;
+                  </em>
+                  ) and auto-fill Seeds, Category, City, Vibe Tags, and Exclude
+                  fields at once. You can also say{" "}
+                  <em>&ldquo;insert entity IDs&rdquo;</em> or{" "}
+                  <em>&ldquo;insert top pick name&rdquo;</em> in any field to
+                  insert upstream <code>{"{{ }}"}</code> tokens by voice!
+                </p>
+              </div>
+
               <div className="rounded-xl border bg-card p-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <Zap className="size-4 text-emerald-500" />
@@ -765,10 +807,10 @@ export default function DocsPage() {
                   Selected-Node Targeting &amp; In-Place Edits
                 </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  Click any node on the canvas while the AI tab is open. A{" "}
-                  <strong>Target in prompt</strong> bar appears—click it to focus
-                  your instruction on that specific step. When applied, the AI
-                  updates existing nodes in place without creating duplicates.
+                  Click any node on the canvas while using the Wispr Flow Voice
+                  Bar or the AI tab. Your spoken or typed instruction is
+                  automatically scoped to that node and updates existing nodes in
+                  place without creating duplicates.
                 </p>
               </div>
             </div>

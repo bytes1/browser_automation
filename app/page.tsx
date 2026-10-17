@@ -279,7 +279,7 @@ export default function Home() {
           <div className="eyebrow-pill">
             <span className="eyebrow-badge">NEW</span>
             <Sparkles size={12} className="eyebrow-sparkle" />
-            <span>STAGEHAND 4.0 + QLOO TASTE ENGINE</span>
+            <span>WISPR FLOW VOICE + STAGEHAND 4.0 + TASTE AI</span>
             <ArrowRight size={12} />
           </div>
           <h1>

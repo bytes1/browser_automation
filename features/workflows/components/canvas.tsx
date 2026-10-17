@@ -18,6 +18,7 @@ import { BookOpenIcon } from "lucide-react"
 
 import type { WorkflowGraph } from "@/lib/db/schema"
 import { StepNode } from "@/features/workflows/components/step-node"
+import { WisprVoiceBar } from "@/features/workflows/components/wispr-voice-bar"
 import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 
 import "@xyflow/react/dist/style.css"
@@ -114,6 +115,9 @@ export function Canvas({ initialGraph }: CanvasProps) {
             <span>Docs &amp; Guide</span>
           </Link>
           <AvatarStack />
+        </Panel>
+        <Panel position="bottom-center" className="mb-2">
+          <WisprVoiceBar />
         </Panel>
       </ReactFlow>
     </div>
