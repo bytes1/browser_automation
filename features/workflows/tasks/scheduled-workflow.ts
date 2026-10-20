@@ -23,7 +23,7 @@ export const scheduledWorkflowTask = schedules.task({
       identity,
       {
         tags: [`workflow:${identity.workflowId}`],
-        externalDeploymentId: null,
+        externalDeploymentId: null as unknown as string,
       }
     )
   },

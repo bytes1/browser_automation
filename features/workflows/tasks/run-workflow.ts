@@ -233,11 +233,16 @@ export const runWorkflowTask = task({
                 await metadata.flush()
             }
 
+            const rawModel = process.env.STAGEHAND_MODEL?.trim()
+            const resolvedModel: ModelName =
+                !rawModel || rawModel === "google/gemini-3.5-flash-lite"
+                    ? "google/gemini-2.5-flash"
+                    : (rawModel as ModelName)
+
             stagehand = await Stagehand.create({
                 browser,
                 model: {
-                    modelName: (process.env.STAGEHAND_MODEL ??
-                        "google/gemini-3.5-flash-lite") as ModelName,
+                    modelName: resolvedModel,
                 },
                 // disablePino is completely removed in V4
             })
