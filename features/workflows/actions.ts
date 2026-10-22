@@ -25,6 +25,7 @@ import { generateSlug } from "@/features/workflows/lib/generate-slug"
 import {
     buildCronPattern,
     getWorkflowTriggerRef,
+    normalizeTriggerTimezone,
     workflowScheduleExternalId,
     zonedDateTimeToUtc,
     type WorkflowTriggerRef,
@@ -154,10 +155,11 @@ export async function saveWorkflowScheduleAction({
             }
             const externalId = workflowScheduleExternalId(id, orgId)
             const environment = process.env.TRIGGER_ENVIRONMENT ?? process.env.NODE_ENV ?? "default"
+            const triggerTimezone = normalizeTriggerTimezone(timezone)
             const schedule = await schedules.create({
                 task: scheduledWorkflowTaskId,
                 cron,
-                timezone,
+                timezone: triggerTimezone,
                 externalId,
                 deduplicationKey: `workflow:${environment}:${orgId}:${id}`,
                 window: "0m",

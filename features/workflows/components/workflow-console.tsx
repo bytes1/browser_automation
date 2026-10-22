@@ -1885,7 +1885,7 @@ export function WorkflowConsole({ workflowId }: { workflowId: string }) {
 
     const isLive = selectedRun?.status === "EXECUTING" || selectedRun?.status === "QUEUED"
 
-    // When run changes, auto-select the most relevant step (failed, running, or first)
+    // When run changes, auto-select the most relevant step (failed, running, or last completed output step)
     const effectiveStepIndex = useMemo(() => {
         if (steps.length === 0) return -1
         if (
@@ -1901,6 +1901,13 @@ export function WorkflowConsole({ workflowId }: { workflowId: string }) {
 
         const runningIdx = steps.findIndex((s) => s.status === "running")
         if (runningIdx !== -1) return runningIdx
+
+        // Prefer the last completed step (e.g. AI synthesis / Qloo / final action) over the Start trigger
+        for (let i = steps.length - 1; i >= 0; i--) {
+            if (steps[i].status === "done" && steps[i].nodeType !== "start") {
+                return i
+            }
+        }
 
         return 0
     }, [steps, selectedStepIndex])
@@ -2038,8 +2045,9 @@ export function WorkflowConsole({ workflowId }: { workflowId: string }) {
                                         setSelectedStepIndex(null)
                                     }}
                                     className={cn(
-                                        "flex w-full flex-col gap-1 p-2.5 text-left text-xs transition-colors hover:bg-accent/50",
-                                        isSelected && "bg-accent/80 shadow-xs ring-1 ring-border"
+                                        "flex w-full flex-col gap-1 border-l-2 border-l-transparent p-2.5 text-left text-xs transition-all hover:bg-accent/50",
+                                        isSelected &&
+                                            "border-l-violet-500 bg-violet-500/8 shadow-2xs"
                                     )}
                                 >
                                     <div className="flex items-center justify-between gap-1">
@@ -2103,8 +2111,9 @@ export function WorkflowConsole({ workflowId }: { workflowId: string }) {
                                             setRightPaneMode("step")
                                         }}
                                         className={cn(
-                                            "flex w-full items-center gap-2.5 p-2.5 text-left text-xs transition-colors hover:bg-accent/50",
-                                            isSelected && "bg-accent/80 font-medium ring-1 ring-border"
+                                            "flex w-full items-center gap-2.5 border-l-2 border-l-transparent p-2.5 text-left text-xs transition-all hover:bg-accent/50",
+                                            isSelected &&
+                                                "border-l-violet-500 bg-violet-500/8 font-medium shadow-2xs"
                                         )}
                                     >
                                         <span className="font-mono text-[11px] text-muted-foreground/80 w-3.5 text-right shrink-0">

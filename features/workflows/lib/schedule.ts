@@ -47,6 +47,43 @@ export function workflowScheduleExternalId(workflowId: string, orgId: string) {
   return JSON.stringify({ workflowId, orgId })
 }
 
+/**
+ * Trigger.dev Cloud validates schedule timezones against Node/V8's CLDR
+ * `Intl.supportedValuesOf("timeZone")` list, which uses historical canonical
+ * names like `Asia/Calcutta` instead of `Asia/Kolkata`. Normalize common
+ * modern IANA aliases and shorthand codes before sending to Trigger.dev.
+ */
+const TRIGGER_TIMEZONE_ALIASES: Record<string, string> = {
+  "asia/kolkata": "Asia/Calcutta",
+  "ist": "Asia/Calcutta",
+  "asia/mumbai": "Asia/Calcutta",
+  "asia/delhi": "Asia/Calcutta",
+  "asia/new_delhi": "Asia/Calcutta",
+  "asia/bangalore": "Asia/Calcutta",
+  "asia/chennai": "Asia/Calcutta",
+  "asia/ho_chi_minh": "Asia/Saigon",
+  "asia/kathmandu": "Asia/Katmandu",
+  "asia/yangon": "Asia/Rangoon",
+  "europe/kyiv": "Europe/Kiev",
+  "us/eastern": "America/New_York",
+  "us/central": "America/Chicago",
+  "us/mountain": "America/Denver",
+  "us/pacific": "America/Los_Angeles",
+  "est": "America/New_York",
+  "cst": "America/Chicago",
+  "mst": "America/Denver",
+  "pst": "America/Los_Angeles",
+  "gmt": "UTC",
+  "etc/utc": "UTC",
+  "etc/gmt": "UTC",
+}
+
+export function normalizeTriggerTimezone(timezone: string): string {
+  const trimmed = timezone.trim()
+  const mapped = TRIGGER_TIMEZONE_ALIASES[trimmed.toLowerCase()]
+  return mapped ?? trimmed
+}
+
 export function buildCronPattern(values: Record<string, string>) {
   const frequency = values.frequency ?? (values.cron ? "custom" : "daily")
   if (frequency === "once") return null
@@ -99,7 +136,7 @@ export function zonedDateTimeToUtc(value: string, timezone: string) {
   }
 
   const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timezone,
+    timeZone: normalizeTriggerTimezone(timezone),
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

@@ -1111,88 +1111,122 @@ function Palette() {
   }
 
   return (
-    <Section title="Toolbar">
-      <div className="border-b border-border p-3 space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div className="border-b border-border/80 bg-muted/20 p-3 space-y-2">
+        <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Sparkles className="size-3.5 text-fuchsia-500" />
-            <span>Starter Workflow Blueprints</span>
+            <span>Starter Blueprints</span>
           </div>
+          <span className="rounded-full bg-fuchsia-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-fuchsia-600 dark:text-fuchsia-400">
+            1-Click
+          </span>
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="w-full justify-start text-xs font-medium"
-          onClick={() => loadTemplate("web-to-taste")}
-        >
-          <Globe className="size-3.5 text-emerald-500 shrink-0" />
-          <span className="truncate">Web-to-Taste Auto-Discovery</span>
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs font-medium"
-          onClick={() => loadTemplate("concierge")}
-        >
-          <Sparkles className="size-3.5 text-fuchsia-500 shrink-0" />
-          <span className="truncate">Autonomous Cultural Concierge</span>
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-full justify-start text-xs font-medium"
-          onClick={() => loadTemplate("cross-domain")}
-        >
-          <Layers className="size-3.5 text-violet-500 shrink-0" />
-          <span className="truncate">Cross-Domain Taste Scout</span>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-xs text-muted-foreground"
-          onClick={() => loadTemplate("local")}
-        >
-          <MapPin className="size-3.5 text-rose-500 shrink-0" />
-          <span className="truncate">Local Places Explorer</span>
-        </Button>
+        <div className="grid gap-1.5">
+          <button
+            type="button"
+            onClick={() => loadTemplate("web-to-taste")}
+            className="group flex w-full items-center gap-2.5 rounded-lg border border-emerald-500/25 bg-gradient-to-r from-emerald-500/8 via-teal-500/5 to-transparent px-2.5 py-2 text-left text-xs font-medium text-foreground transition-all hover:border-emerald-500/50 hover:from-emerald-500/15 hover:shadow-2xs"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <Globe className="size-3.5" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate font-semibold">Web-to-Taste Auto-Discovery</span>
+              <span className="truncate text-[10px] text-muted-foreground">
+                Stagehand + Qloo + Gemini Pitch
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => loadTemplate("concierge")}
+            className="group flex w-full items-center gap-2.5 rounded-lg border border-border/80 bg-card/80 px-2.5 py-1.5 text-left text-xs font-medium text-foreground transition-all hover:border-fuchsia-500/40 hover:bg-fuchsia-500/5"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-fuchsia-500/12 text-fuchsia-600 dark:text-fuchsia-400">
+              <Sparkles className="size-3.5" />
+            </span>
+            <span className="truncate">Autonomous Cultural Concierge</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => loadTemplate("cross-domain")}
+            className="group flex w-full items-center gap-2.5 rounded-lg border border-border/80 bg-card/80 px-2.5 py-1.5 text-left text-xs font-medium text-foreground transition-all hover:border-violet-500/40 hover:bg-violet-500/5"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-violet-500/12 text-violet-600 dark:text-violet-400">
+              <Layers className="size-3.5" />
+            </span>
+            <span className="truncate">Cross-Domain Taste Scout</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => loadTemplate("local")}
+            className="group flex w-full items-center gap-2.5 rounded-lg border border-border/80 bg-card/80 px-2.5 py-1.5 text-left text-xs font-medium text-foreground transition-all hover:border-rose-500/40 hover:bg-rose-500/5"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-rose-500/12 text-rose-600 dark:text-rose-400">
+              <MapPin className="size-3.5" />
+            </span>
+            <span className="truncate">Local Places Explorer</span>
+          </button>
+        </div>
       </div>
+
       <Accordion
         type="multiple"
-        defaultValue={sections.map((s) => s.kind)}
+        defaultValue={["trigger", "browser-ai", "qloo"]}
         className="px-3 py-2"
       >
-        {sections.map((section) => (
+        {[
+          {
+            key: "trigger",
+            label: "Triggers",
+            filter: (def: NodeDefinition) => def.kind === "trigger",
+          },
+          {
+            key: "browser-ai",
+            label: "Browser & AI Actions",
+            filter: (def: NodeDefinition) =>
+              def.kind === "action" && !def.type.startsWith("qloo"),
+          },
+          {
+            key: "qloo",
+            label: "Qloo Cultural Intelligence",
+            filter: (def: NodeDefinition) => def.type.startsWith("qloo"),
+          },
+        ].map((group) => (
           <AccordionItem
-            key={section.kind}
-            value={section.kind}
+            key={group.key}
+            value={group.key}
             className="not-last:border-b-0"
           >
-            <AccordionTrigger className="py-2 text-xs font-medium text-muted-foreground hover:no-underline">
-              {section.label}
+            <AccordionTrigger className="py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:no-underline">
+              {group.label}
             </AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-0.5">
-              {definitions
-                .filter((def) => def.kind === section.kind)
-                .map((def) => (
-                  <Button
-                    key={def.type}
-                    variant="ghost"
-                    onClick={() => add(def.type as NodeType)}
-                    className="justify-start gap-2.5 px-1.5 text-xs"
-                  >
+            <AccordionContent className="flex flex-col gap-1 pb-2">
+              {definitions.filter(group.filter).map((def) => (
+                <button
+                  key={def.type}
+                  type="button"
+                  onClick={() => add(def.type as NodeType)}
+                  className="group flex w-full items-center justify-between gap-2.5 rounded-lg border border-transparent px-2 py-1.5 text-left text-xs font-medium text-foreground transition-all hover:border-border/80 hover:bg-accent/70"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
                     <NodeIcon type={def.type as NodeType} />
-                    {def.label}
-                  </Button>
-                ))}
+                    <span className="truncate">{def.label}</span>
+                  </span>
+                  <span className="rounded bg-muted px-1.5 py-0.2 font-mono text-[10px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                    + Add
+                  </span>
+                </button>
+              ))}
             </AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
-    </Section>
+    </div>
   )
 }
 
@@ -1243,10 +1277,9 @@ function RunButton({ workflowId }: { workflowId: string }) {
   return (
     <Button
       size="sm"
-      variant="secondary"
       disabled={isPending}
+      className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs transition-all hover:from-violet-500 hover:to-indigo-500 hover:shadow-md dark:from-violet-500 dark:to-indigo-500"
       onClick={() => {
-        // TODO: validate the graph and run the workflow (toggle to Stop while running).
         const graph = { nodes: getNodes(), edges: getEdges() }
         const problems = validateGraph(graph)
         if (problems.length > 0) {
@@ -1260,7 +1293,11 @@ function RunButton({ workflowId }: { workflowId: string }) {
         })
       }}
     >
-      <Play fill="primary" />
+      {isPending ? (
+        <LoaderCircle className="size-3.5 animate-spin" />
+      ) : (
+        <Play className="size-3.5 fill-current" />
+      )}
       Run
     </Button>
   )
@@ -1325,52 +1362,48 @@ export function RightSidebar({ workflowId }: { workflowId: string }) {
   }
 
   return (
-    <ResizablePanel
-      className="bg-background"
-      defaultSize="16rem"
-      minSize="14rem"
-      maxSize="36rem"
-      groupResizeBehavior="preserve-pixel-size"
-    >
+    <div className="flex size-full flex-col bg-background">
       <Tabs value={tab} onValueChange={setTab} className="size-full gap-0">
-        <div className="flex items-center justify-between border-b border-border p-2">
+        <div className="flex items-center justify-between border-b border-border/80 bg-card/60 px-2.5 py-2 backdrop-blur-xs">
           <ActionsMenu workflowId={workflowId} />
           <div className="flex items-center gap-1.5">
             <ScheduleButton workflowId={workflowId} />
             <RunButton workflowId={workflowId} />
           </div>
         </div>
-        <TabsList className="m-2 w-fit bg-background">
-          <TabsTrigger
-            value="toolbar"
-            className="flex-none rounded-sm data-active:bg-accent! data-active:text-accent-foreground! data-active:shadow-none! dark:data-active:border-transparent!"
-          >
-            Toolbar
-          </TabsTrigger>
-          <TabsTrigger
-            value="editor"
-            className="flex-none rounded-sm data-active:bg-accent! data-active:text-accent-foreground! data-active:shadow-none! dark:data-active:border-transparent!"
-          >
-            Editor
-          </TabsTrigger>
-          <TabsTrigger
-            value="ai"
-            className="flex-none rounded-sm data-active:bg-accent! data-active:text-accent-foreground! data-active:shadow-none! dark:data-active:border-transparent!"
-          >
-            <Bot className="mr-1 size-3.5" />
-            AI
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="toolbar" className="flex min-h-0 flex-col">
+        <div className="border-b border-border/60 bg-muted/15 px-2.5 py-2">
+          <TabsList className="grid w-full grid-cols-3 rounded-lg bg-muted/80 p-1">
+            <TabsTrigger
+              value="toolbar"
+              className="rounded-md text-xs font-medium data-active:bg-background! data-active:text-foreground! data-active:shadow-2xs!"
+            >
+              Toolbar
+            </TabsTrigger>
+            <TabsTrigger
+              value="editor"
+              className="rounded-md text-xs font-medium data-active:bg-background! data-active:text-foreground! data-active:shadow-2xs!"
+            >
+              Editor
+            </TabsTrigger>
+            <TabsTrigger
+              value="ai"
+              className="rounded-md text-xs font-medium data-active:bg-background! data-active:text-foreground! data-active:shadow-2xs!"
+            >
+              <Bot className="mr-1 size-3.5 text-violet-500" />
+              AI
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="toolbar" className="flex min-h-0 flex-1 flex-col">
           <Palette />
         </TabsContent>
-        <TabsContent value="editor" className="flex min-h-0 flex-col">
+        <TabsContent value="editor" className="flex min-h-0 flex-1 flex-col">
           <Inspector key={selected?.id} node={selected} />
         </TabsContent>
-        <TabsContent value="ai" className="flex min-h-0 flex-col">
+        <TabsContent value="ai" className="flex min-h-0 flex-1 flex-col">
           <AiWorkflowBuilder />
         </TabsContent>
       </Tabs>
-    </ResizablePanel>
+    </div>
   )
 }
