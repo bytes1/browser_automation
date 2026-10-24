@@ -300,7 +300,7 @@ export default function DocsPage() {
                       >
                         /launch
                       </Link>{" "}
-                      and click one of the 4 starter templates (e.g.,{" "}
+                      and click one of the 5 starter templates (e.g.,{" "}
                       <strong>Web-to-Taste Auto-Discovery</strong>).
                     </li>
                     <li>

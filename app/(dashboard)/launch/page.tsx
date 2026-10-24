@@ -32,6 +32,13 @@ const STARTER_TEMPLATES: {
   icon: typeof SparklesIcon
 }[] = [
   {
+    id: "cultural-positioning",
+    title: "Cultural Positioning Intel",
+    description:
+      "Analyze your live site through three Qloo audience lenses, scrape competitor messaging, and generate a testable positioning brief.",
+    icon: SparklesIcon,
+  },
+  {
     id: "web-to-taste",
     title: "Web-to-Taste Auto-Discovery",
     description:

@@ -2,7 +2,12 @@ import type { Edge } from "@xyflow/react"
 import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 import type { WorkflowGraph } from "@/lib/db/schema"
 
-export type TemplateId = "web-to-taste" | "concierge" | "cross-domain" | "local"
+export type TemplateId =
+  | "web-to-taste"
+  | "concierge"
+  | "cross-domain"
+  | "local"
+  | "cultural-positioning"
 
 export interface WorkflowTemplate {
   id: TemplateId
@@ -21,6 +26,216 @@ export interface WorkflowTemplate {
 }
 
 export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
+  "cultural-positioning": {
+    id: "cultural-positioning",
+    name: "Cultural Positioning Intelligence",
+    title: "Cultural Positioning & Competitor Intel",
+    description:
+      "Analyze your live product site through three Qloo cultural audience lenses, research competitor messaging, and synthesize a positioning brief.",
+    badge: "3 Audience Lenses",
+    buildGraph: (center = { x: 300, y: 200 }, existingStartId = "start") => {
+      const startId = existingStartId
+      const siteId = crypto.randomUUID()
+      const productId = crypto.randomUUID()
+      const synthId = crypto.randomUUID()
+
+      const personas = [
+        {
+          key: "design",
+          title: "Design-Led Culture",
+          seeds: "A24, Wes Anderson, Kinfolk",
+          row: center.y - 330,
+        },
+        {
+          key: "outdoor",
+          title: "Outdoor & Conscious Living",
+          seeds: "Patagonia, National Geographic, Bon Iver",
+          row: center.y,
+        },
+        {
+          key: "creator",
+          title: "Gaming & Digital Creators",
+          seeds: "Nintendo, Studio Ghibli, Twitch",
+          row: center.y + 330,
+        },
+      ]
+
+      const nodes: StepNodeType[] = [
+        {
+          id: startId,
+          type: "step",
+          position: { x: center.x - 930, y: center.y },
+          data: { type: "start", kind: "trigger", title: "Start", values: {} },
+        },
+        {
+          id: siteId,
+          type: "step",
+          position: { x: center.x - 680, y: center.y },
+          data: {
+            type: "open-url",
+            kind: "action",
+            title: "Your Startup Website (replace URL)",
+            values: { url: "https://linear.app" },
+          },
+        },
+        {
+          id: productId,
+          type: "step",
+          position: { x: center.x - 430, y: center.y },
+          data: {
+            type: "extract",
+            kind: "action",
+            title: "Extract Product Positioning",
+            values: {
+              instruction:
+                "From this company's live website, extract a compact JSON object with the company name, product category, core value proposition, target customer, and the three most prominent positioning claims. Use only information visible on this site.",
+            },
+          },
+        },
+      ]
+
+      const edges: Edge[] = [
+        { id: crypto.randomUUID(), source: startId, target: siteId },
+        { id: crypto.randomUUID(), source: siteId, target: productId },
+      ]
+
+      const personaContext: string[] = []
+
+      for (const persona of personas) {
+        const seedsId = crypto.randomUUID()
+        const demographicsId = crypto.randomUUID()
+        const brandsId = crypto.randomUUID()
+        const searchId = crypto.randomUUID()
+        const actId = crypto.randomUUID()
+        const competitorId = crypto.randomUUID()
+        const row = persona.row
+
+        nodes.push(
+          {
+            id: seedsId,
+            type: "step",
+            position: { x: center.x - 180, y: row },
+            data: {
+              type: "qloo-search",
+              kind: "action",
+              title: `${persona.title} Seeds`,
+              values: { query: persona.seeds, entityType: "any" },
+            },
+          },
+          {
+            id: demographicsId,
+            type: "step",
+            position: { x: center.x + 70, y: row - 115 },
+            data: {
+              type: "qloo-demographics",
+              kind: "action",
+              title: `${persona.title} Audience`,
+              values: { entityIds: `{{ ${seedsId}.entityIds }}` },
+            },
+          },
+          {
+            id: brandsId,
+            type: "step",
+            position: { x: center.x + 70, y: row + 115 },
+            data: {
+              type: "qloo-recommend",
+              kind: "action",
+              title: `${persona.title} Brand Affinities`,
+              values: {
+                entityIds: `{{ ${seedsId}.entityIds }}`,
+                targetType: "urn:entity:brand",
+                city: "",
+                vibeTags: "",
+                negativeSeeds: "",
+                limit: "5",
+              },
+            },
+          },
+          {
+            id: searchId,
+            type: "step",
+            position: { x: center.x + 345, y: row + 115 },
+            data: {
+              type: "open-url",
+              kind: "action",
+              title: `${persona.title} Competitor Search`,
+              values: {
+                url: `https://www.google.com/search?q={{ ${productId}.data }}+competitors+alternatives+{{ ${brandsId}.names }}`,
+              },
+            },
+          },
+          {
+            id: actId,
+            type: "step",
+            position: { x: center.x + 595, y: row + 115 },
+            data: {
+              type: "act",
+              kind: "action",
+              title: `${persona.title} Open Competitor`,
+              values: {
+                instruction:
+                  "From the search results, open the official website of the most relevant direct competitor or alternative to the startup product. Skip ads, directories, and review pages.",
+              },
+            },
+          },
+          {
+            id: competitorId,
+            type: "step",
+            position: { x: center.x + 845, y: row + 115 },
+            data: {
+              type: "extract",
+              kind: "action",
+              title: `${persona.title} Positioning Evidence`,
+              values: {
+                instruction:
+                  "On this competitor's official website, extract its company name, page URL, product category, target customer, hero headline, core promise, and proof points. Return only information visible on the page as a compact JSON object.",
+              },
+            },
+          }
+        )
+
+        edges.push(
+          { id: crypto.randomUUID(), source: startId, target: seedsId },
+          { id: crypto.randomUUID(), source: productId, target: seedsId },
+          { id: crypto.randomUUID(), source: seedsId, target: demographicsId },
+          { id: crypto.randomUUID(), source: seedsId, target: brandsId },
+          { id: crypto.randomUUID(), source: productId, target: searchId },
+          { id: crypto.randomUUID(), source: brandsId, target: searchId },
+          { id: crypto.randomUUID(), source: searchId, target: actId },
+          { id: crypto.randomUUID(), source: actId, target: competitorId },
+          { id: crypto.randomUUID(), source: demographicsId, target: synthId },
+          { id: crypto.randomUUID(), source: brandsId, target: synthId },
+          { id: crypto.randomUUID(), source: competitorId, target: synthId }
+        )
+
+        personaContext.push(
+          `${persona.title}: Qloo seeds {{ ${seedsId}.summary }}\nAudience profile {{ ${demographicsId}.personaSummary }}\nAffinity brands:\n{{ ${brandsId}.summary }}\nCompetitor website evidence:\n{{ ${competitorId}.data }}`
+        )
+      }
+
+      nodes.push({
+        id: synthId,
+        type: "step",
+        position: { x: center.x + 1170, y: center.y },
+        data: {
+          type: "ai-synthesize",
+          kind: "action",
+          title: "Cultural Positioning Brief",
+          values: {
+            format: "brief",
+            instruction:
+              "Create a founder-ready cultural positioning brief comparing how three distinct subcultures may respond to this startup's product. For each audience, compare its Qloo affinity signals and audience profile with the live-scraped competitor messaging; identify a plausible resonance, a positioning gap, and one testable message. Clearly label audience perception as a hypothesis, distinguish Qloo affinity signals from website evidence, and do not claim this is survey research or invent facts. Treat demographics as directional only; if profiles look like generic fallback values, disclose that and do not draw persona-specific conclusions from them.",
+            contextData: `Startup website positioning:\n{{ ${productId}.data }}\n\n${personaContext.join("\n\n")}`,
+          },
+        },
+      })
+
+      edges.push({ id: crypto.randomUUID(), source: productId, target: synthId })
+
+      return { startId, nodes, edges }
+    },
+  },
+
   "web-to-taste": {
     id: "web-to-taste",
     name: "Web-to-Taste Auto-Discovery",

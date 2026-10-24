@@ -135,11 +135,12 @@ Designed from the ground up to pair seamlessly with **Wispr Flow Desktop**:
 
 ## 🚀 1-Click Starter Blueprints
 
-Launch any of the 4 pre-built blueprints from `/launch` or from the **Toolbar** tab in the right sidebar:
+Launch any of the 5 pre-built blueprints from `/launch`:
 
 | Blueprint | Node Pipeline | What It Demonstrates |
 | :--- | :--- | :--- |
 | 🌐 **Web-to-Taste Auto-Discovery** *(Flagship)* | `Start` ➔ `Open URL (Wikipedia)` ➔ `Stagehand Extract (Creators & Works)` ➔ `Qloo Taste Seeds (Auto-Resolve)` ➔ `Qloo Brand Match` ➔ `AI Sponsorship Pitch Synthesizer` | **Reverse Web-to-Taste Loop:** Autonomous browser scrapes live web entities, resolves them into taste seeds, finds aligned brands, and writes a sponsorship pitch. |
+| 🧭 **Cultural Positioning & Competitor Intel** | `Startup Website` ➔ `Product Positioning Extract` ➔ 3 `Qloo Audience + Brand Affinity` tracks ➔ `Live Competitor Research` ➔ `Cultural Positioning Brief` | **Cultural Market Map:** Compares three subculture lenses, Qloo affinity signals, and live competitor messaging to propose testable positioning hypotheses. |
 | 🍸 **Autonomous Cultural Concierge** | `Start` ➔ `Qloo Taste Seeds` ➔ `Qloo Local Discovery (Tokyo)` ➔ `Open URL (Live Web Verification)` ➔ `Send VIP Email` | **Taste-to-Action Loop:** Multi-domain seeds (*Radiohead, Haruki Murakami*) ➔ hyper-local Tokyo venues ➔ live browser verification ➔ email delivery. |
 | 🏷️ **Cross-Domain Taste Scout** | `Start` ➔ `Cinema Aesthetic Seeds` ➔ `Qloo Lifestyle Brand Recommendations` ➔ `Send Brand Affinity Report` | **Cross-Domain Correlation:** Maps film aesthetics (*Wes Anderson, Studio Ghibli*) to fashion & lifestyle brand affinities. |
 | 📍 **Local Places Explorer** | `Start` ➔ `Artist Taste Seed` ➔ `Qloo Local Discovery (New York)` | **Rapid Local Curation:** Turns musical taste into explainable dining and nightlife picks. |
