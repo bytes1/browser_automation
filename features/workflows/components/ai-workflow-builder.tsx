@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import {
   useReactFlow,
   useStore,
@@ -9,6 +8,7 @@ import {
   type NodeChange,
   type EdgeChange,
 } from "@xyflow/react"
+import { useWorkflowFlow } from "@/features/workflows/components/workflow-flow-provider"
 import {
   Bot,
   CalendarClock,
@@ -165,7 +165,7 @@ export function AiWorkflowBuilder() {
 
   const { fitView } = useReactFlow<StepNodeType>()
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
-    useLiveblocksFlow<StepNodeType, Edge>({ suspense: true })
+    useWorkflowFlow()
 
   const selectedNode = useStore((s) =>
     s.nodes.find((n) => n.selected)

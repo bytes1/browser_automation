@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useReactFlow, useStore, type Edge } from "@xyflow/react"
-import { useLiveblocksFlow } from "@liveblocks/react-flow"
-import { AudioLines, Bot, CalendarClock, CheckCircle2, Globe, Layers, LoaderCircle, MapPin, MoreHorizontal, Play, Sparkles, Trash2, Unlink } from "lucide-react"
+import { AudioLines, Bot, CalendarClock, CheckCircle2, Globe, Layers, LoaderCircle, MapPin, MoreHorizontal, Play, Radar, Sparkles, Trash2, Unlink } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -33,8 +32,10 @@ import {
   saveWorkflowScheduleAction,
 } from "@/features/workflows/actions"
 import { useWatchWorkflowRun } from "@/features/workflows/components/workflow-runs-provider"
+import { useWorkflowFlow } from "@/features/workflows/components/workflow-flow-provider"
 import { AiWorkflowBuilder } from "@/features/workflows/components/ai-workflow-builder"
 import { useUpstreamConnections } from "@/features/workflows/hooks/use-upstream-connections"
+import { WORKFLOW_TEMPLATES, type TemplateId } from "@/features/workflows/lib/templates"
 import { validateGraph } from "@/features/workflows/lib/validate-graph"
 import {
   nodeRegistry,
@@ -703,8 +704,7 @@ function Palette() {
   // sidebar) lets us read the current nodes/viewport and add to them from here.
   const { getNodes, getEdges, getViewport, addNodes, fitView } =
     useReactFlow<StepNodeType>()
-  const { onNodesChange, onEdgesChange, onDelete } =
-    useLiveblocksFlow<StepNodeType, Edge>()
+  const { onNodesChange, onEdgesChange, onDelete } = useWorkflowFlow()
   // The pane's measured size, used to find the center of the current view.
   const width = useStore((s) => s.width)
   const height = useStore((s) => s.height)
@@ -717,330 +717,27 @@ function Palette() {
     onEdgesChange(edges.map((item) => ({ type: "add" as const, item })))
   }
 
-  const loadTemplate = (
-    templateType: "concierge" | "cross-domain" | "local" | "web-to-taste"
-  ) => {
-    const existing = getNodes()
-    const isCustomized = existing.some(
-      (n) => n.id !== "start" && n.data?.type !== "start"
-    )
-    if (isCustomized) {
-      toast.error(
-        "Please clear the canvas or create a new workflow before loading a template."
-      )
-      return
-    }
+  const loadTemplate = (templateType: TemplateId) => {
+    const template = WORKFLOW_TEMPLATES[templateType]
+    if (!template) return
 
     const { x, y, zoom } = getViewport()
-    const center = { x: (width / 2 - x) / zoom, y: (height / 2 - y) / zoom }
-
-    if (templateType === "web-to-taste") {
-      const startId = crypto.randomUUID()
-      const openId = crypto.randomUUID()
-      const extractId = crypto.randomUUID()
-      const seedsId = crypto.randomUUID()
-      const recsId = crypto.randomUUID()
-      const synthId = crypto.randomUUID()
-
-      const newNodes: StepNodeType[] = [
-        {
-          id: startId,
-          type: "step",
-          position: { x: center.x - 650, y: center.y },
-          data: { type: "start", kind: "trigger", title: "Start", values: {} },
-        },
-        {
-          id: openId,
-          type: "step",
-          position: { x: center.x - 390, y: center.y },
-          data: {
-            type: "open-url",
-            kind: "action",
-            title: "Open Cultural Page",
-            values: {
-              url: "https://en.wikipedia.org/wiki/Studio_Ghibli",
-            },
-          },
-        },
-        {
-          id: extractId,
-          type: "step",
-          position: { x: center.x - 130, y: center.y },
-          data: {
-            type: "extract",
-            kind: "action",
-            title: "Extract Creators & Works",
-            values: {
-              instruction:
-                "Extract the top 3 iconic film titles or directors mentioned on this page as a comma-separated list",
-            },
-          },
-        },
-        {
-          id: seedsId,
-          type: "step",
-          position: { x: center.x + 130, y: center.y },
-          data: {
-            type: "qloo-search",
-            kind: "action",
-            title: "Auto-Resolve Qloo Seeds",
-            values: {
-              query: `{{ ${extractId}.data }}`,
-              entityType: "any",
-            },
-          },
-        },
-        {
-          id: recsId,
-          type: "step",
-          position: { x: center.x + 390, y: center.y },
-          data: {
-            type: "qloo-recommend",
-            kind: "action",
-            title: "Cross-Domain Brand Match",
-            values: {
-              entityIds: `{{ ${seedsId}.entityIds }}`,
-              targetType: "urn:entity:brand",
-              city: "",
-              vibeTags: "craft, minimalist, design",
-              negativeSeeds: "",
-              limit: "6",
-            },
-          },
-        },
-        {
-          id: synthId,
-          type: "step",
-          position: { x: center.x + 650, y: center.y },
-          data: {
-            type: "ai-synthesize",
-            kind: "action",
-            title: "Synthesize Sponsorship Brief",
-            values: {
-              format: "pitch",
-              instruction:
-                "Create a brand partnership & cultural affinity pitch deck brief combining the live web extraction and Qloo brand matches.",
-              contextData: `Web Extracted Entities: {{ ${extractId}.data }}\nResolved Qloo Seeds: {{ ${seedsId}.summary }}\nQloo Brand Recommendations:\n{{ ${recsId}.summary }}`,
-            },
-          },
-        },
-      ]
-
-      const newEdges = [
-        { id: crypto.randomUUID(), source: startId, target: openId },
-        { id: crypto.randomUUID(), source: openId, target: extractId },
-        { id: crypto.randomUUID(), source: extractId, target: seedsId },
-        { id: crypto.randomUUID(), source: seedsId, target: recsId },
-        { id: crypto.randomUUID(), source: recsId, target: synthId },
-      ]
-
-      replaceGraph(newNodes, newEdges)
-      setTimeout(() => fitView({ padding: 0.15 }), 50)
-      toast.success("Loaded 'Web-to-Taste Auto-Discovery' template!")
-      return
+    const safeZoom = zoom || 1
+    const center = {
+      x: width ? (width / 2 - x) / safeZoom : 0,
+      y: height ? (height / 2 - y) / safeZoom : 0,
     }
 
-    if (templateType === "concierge") {
-      const startId = crypto.randomUUID()
-      const seedsId = crypto.randomUUID()
-      const localId = crypto.randomUUID()
-      const browseId = crypto.randomUUID()
-      const emailId = crypto.randomUUID()
+    const { nodes: newNodes, edges: newEdges } = template.buildGraph(
+      center,
+      () => crypto.randomUUID()
+    )
 
-      const newNodes: StepNodeType[] = [
-        {
-          id: startId,
-          type: "step",
-          position: { x: center.x - 560, y: center.y },
-          data: { type: "start", kind: "trigger", title: "Start", values: {} },
-        },
-        {
-          id: seedsId,
-          type: "step",
-          position: { x: center.x - 280, y: center.y },
-          data: {
-            type: "qloo-search",
-            kind: "action",
-            title: "Taste Seeds (Multi-Domain)",
-            values: {
-              query: "Radiohead, Haruki Murakami",
-              entityType: "any",
-            },
-          },
-        },
-        {
-          id: localId,
-          type: "step",
-          position: { x: center.x, y: center.y },
-          data: {
-            type: "qloo-local",
-            kind: "action",
-            title: "Discover Tokyo Venues",
-            values: {
-              entityIds: `{{ ${seedsId}.entityIds }}`,
-              city: "Tokyo",
-              limit: "5",
-            },
-          },
-        },
-        {
-          id: browseId,
-          type: "step",
-          position: { x: center.x + 280, y: center.y },
-          data: {
-            type: "open-url",
-            kind: "action",
-            title: "Autonomous Web Agent",
-            values: {
-              url: `https://www.google.com/search?q={{ ${localId}.topPickName }}+Tokyo`,
-            },
-          },
-        },
-        {
-          id: emailId,
-          type: "step",
-          position: { x: center.x + 560, y: center.y },
-          data: {
-            type: "send-email",
-            kind: "action",
-            title: "Deliver VIP Itinerary",
-            values: {
-              to: "curator@example.com",
-              subject: `Cultural Itinerary: {{ ${localId}.topPickName }} & Tokyo Spots`,
-              body: `Hello,\n\nHere is your bespoke cultural itinerary powered by Qloo Taste Intelligence:\n\n⭐ Top Pick: {{ ${localId}.topPickName }}\nAffinity / Rationale: {{ ${localId}.topPickReason }}\n\nCurated Recommendations:\n{{ ${localId}.summary }}\n\nVerified via Autonomous Web Agent.\nEnjoy!`,
-            },
-          },
-        },
-      ]
-
-      const newEdges = [
-        { id: crypto.randomUUID(), source: startId, target: seedsId },
-        { id: crypto.randomUUID(), source: seedsId, target: localId },
-        { id: crypto.randomUUID(), source: localId, target: browseId },
-        { id: crypto.randomUUID(), source: browseId, target: emailId },
-      ]
-
-      replaceGraph(newNodes, newEdges)
-      setTimeout(() => fitView({ padding: 0.15 }), 50)
-      toast.success("Loaded 'Autonomous Cultural Concierge' template!")
-    } else if (templateType === "cross-domain") {
-      const startId = crypto.randomUUID()
-      const seedsId = crypto.randomUUID()
-      const recsId = crypto.randomUUID()
-      const emailId = crypto.randomUUID()
-
-      const newNodes: StepNodeType[] = [
-        {
-          id: startId,
-          type: "step",
-          position: { x: center.x - 420, y: center.y },
-          data: { type: "start", kind: "trigger", title: "Start", values: {} },
-        },
-        {
-          id: seedsId,
-          type: "step",
-          position: { x: center.x - 140, y: center.y },
-          data: {
-            type: "qloo-search",
-            kind: "action",
-            title: "Cinema Aesthetic Seeds",
-            values: {
-              query: "Wes Anderson, Studio Ghibli",
-              entityType: "urn:entity:movie",
-            },
-          },
-        },
-        {
-          id: recsId,
-          type: "step",
-          position: { x: center.x + 140, y: center.y },
-          data: {
-            type: "qloo-recommend",
-            kind: "action",
-            title: "Aligned Lifestyle Brands",
-            values: {
-              entityIds: `{{ ${seedsId}.entityIds }}`,
-              targetType: "urn:entity:brand",
-              city: "",
-              limit: "6",
-            },
-          },
-        },
-        {
-          id: emailId,
-          type: "step",
-          position: { x: center.x + 420, y: center.y },
-          data: {
-            type: "send-email",
-            kind: "action",
-            title: "Email Aesthetic Report",
-            values: {
-              to: "curator@example.com",
-              subject: "Cross-Domain Brand Affinity Report",
-              body: `Cross-domain taste analysis powered by Qloo Taste Intelligence:\n\nTop Pick: {{ ${recsId}.topPickName }}\nWhy: {{ ${recsId}.topPickReason }}\n\nRecommendations:\n{{ ${recsId}.summary }}`,
-            },
-          },
-        },
-      ]
-
-      const newEdges = [
-        { id: crypto.randomUUID(), source: startId, target: seedsId },
-        { id: crypto.randomUUID(), source: seedsId, target: recsId },
-        { id: crypto.randomUUID(), source: recsId, target: emailId },
-      ]
-
-      replaceGraph(newNodes, newEdges)
-      setTimeout(() => fitView({ padding: 0.15 }), 50)
-      toast.success("Loaded 'Cross-Domain Taste Scout' template!")
-    } else {
-      const startId = crypto.randomUUID()
-      const seedsId = crypto.randomUUID()
-      const localId = crypto.randomUUID()
-
-      const newNodes: StepNodeType[] = [
-        {
-          id: startId,
-          type: "step",
-          position: { x: center.x - 300, y: center.y },
-          data: { type: "start", kind: "trigger", title: "Start", values: {} },
-        },
-        {
-          id: seedsId,
-          type: "step",
-          position: { x: center.x, y: center.y },
-          data: {
-            type: "qloo-search",
-            kind: "action",
-            title: "Favorite Artist",
-            values: { query: "Radiohead", entityType: "urn:entity:artist" },
-          },
-        },
-        {
-          id: localId,
-          type: "step",
-          position: { x: center.x + 300, y: center.y },
-          data: {
-            type: "qloo-local",
-            kind: "action",
-            title: "Discover New York Places",
-            values: {
-              entityIds: `{{ ${seedsId}.entityIds }}`,
-              city: "New York",
-              limit: "8",
-            },
-          },
-        },
-      ]
-
-      const newEdges = [
-        { id: crypto.randomUUID(), source: startId, target: seedsId },
-        { id: crypto.randomUUID(), source: seedsId, target: localId },
-      ]
-
-      replaceGraph(newNodes, newEdges)
-      setTimeout(() => fitView({ padding: 0.15 }), 50)
-      toast.success("Loaded 'Local Discovery' template!")
-    }
+    replaceGraph(newNodes, newEdges)
+    window.setTimeout(() => {
+      void fitView({ padding: 0.16, duration: 300 })
+    }, 80)
+    toast.success(`Loaded "${template.name}" blueprint!`)
   }
 
   const add = (type: NodeType) => {
@@ -1123,6 +820,24 @@ function Palette() {
           </span>
         </div>
         <div className="grid gap-1.5">
+          <button
+            type="button"
+            onClick={() => loadTemplate("cultural-positioning")}
+            className="group flex w-full items-center gap-2.5 rounded-lg border border-violet-500/35 bg-gradient-to-r from-violet-500/12 via-fuchsia-500/8 to-transparent px-2.5 py-2 text-left text-xs font-medium text-foreground transition-all hover:border-violet-500/60 hover:from-violet-500/20 hover:shadow-2xs"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-violet-500/20 text-violet-600 dark:text-violet-300">
+              <Radar className="size-3.5" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate font-semibold">
+                Subculture &amp; Competitor Positioning
+              </span>
+              <span className="truncate text-[10px] text-muted-foreground">
+                Your URL → 3 Qloo Personas → Competitor Scrape
+              </span>
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={() => loadTemplate("web-to-taste")}

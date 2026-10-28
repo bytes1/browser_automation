@@ -1,6 +1,6 @@
 "use client"
 
-import { useSyncExternalStore } from "react"
+import { useEffect, useRef, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import {
@@ -11,35 +11,22 @@ import {
   ConnectionLineType,
   useReactFlow,
   type ColorMode,
-  type Edge,
   NodeTypes,
   Panel,
 } from "@xyflow/react"
-import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
+import { Cursors } from "@liveblocks/react-flow"
 import { AvatarStack } from "@liveblocks/react-ui"
 import { BookOpenIcon, GitBranch, Maximize2, Sparkles } from "lucide-react"
 
-import type { WorkflowGraph } from "@/lib/db/schema"
 import { StepNode } from "@/features/workflows/components/step-node"
 import { WisprVoiceBar } from "@/features/workflows/components/wispr-voice-bar"
-import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
+import { useWorkflowFlow } from "@/features/workflows/components/workflow-flow-provider"
 
 import "@xyflow/react/dist/style.css"
 import "@liveblocks/react-ui/styles.css"
 import "@liveblocks/react-flow/styles.css"
 
 const nodeTypes: NodeTypes = { step: StepNode }
-
-const initialNodes: StepNodeType[] = [
-  {
-    id: "start",
-    type: "step",
-    position: { x: 0, y: 0 },
-    data: { type: "start", kind: "trigger", title: "Start", values: {} },
-  },
-]
-
-const initialEdges: Edge[] = []
 
 const emptySubscribe = () => () => { }
 
@@ -53,8 +40,24 @@ function useMounted() {
   )
 }
 
-interface CanvasProps {
-  initialGraph?: WorkflowGraph | null
+function AutoFitOnHydrate({ nodeCount }: { nodeCount: number }) {
+  const { fitView } = useReactFlow()
+  const fittedCountRef = useRef(0)
+
+  useEffect(() => {
+    if (nodeCount > 0 && nodeCount !== fittedCountRef.current) {
+      const shouldRefit = fittedCountRef.current <= 1
+      fittedCountRef.current = nodeCount
+      if (shouldRefit) {
+        const timer = window.setTimeout(() => {
+          void fitView({ padding: 0.16, duration: 250 })
+        }, 60)
+        return () => window.clearTimeout(timer)
+      }
+    }
+  }, [nodeCount, fitView])
+
+  return null
 }
 
 function FitViewQuickButton() {
@@ -62,7 +65,7 @@ function FitViewQuickButton() {
   return (
     <button
       type="button"
-      onClick={() => fitView({ padding: 0.18, duration: 350 })}
+      onClick={() => fitView({ padding: 0.16, duration: 350 })}
       className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-foreground"
       title="Fit graph to view"
     >
@@ -72,7 +75,7 @@ function FitViewQuickButton() {
   )
 }
 
-export function Canvas({ initialGraph }: CanvasProps) {
+export function Canvas() {
   const { resolvedTheme } = useTheme()
   const mounted = useMounted()
   const colorMode: ColorMode = mounted
@@ -85,15 +88,7 @@ export function Canvas({ initialGraph }: CanvasProps) {
     onEdgesChange,
     onConnect,
     onDelete,
-  } = useLiveblocksFlow({
-    suspense: true,
-    nodes: {
-      initial: initialGraph?.nodes?.length ? initialGraph.nodes : initialNodes,
-    },
-    edges: {
-      initial: initialGraph?.edges ?? initialEdges,
-    },
-  })
+  } = useWorkflowFlow()
 
   return (
     <div className="relative size-full overflow-hidden bg-background">
@@ -112,7 +107,9 @@ export function Canvas({ initialGraph }: CanvasProps) {
         onDelete={onDelete}
         colorMode={colorMode}
         fitView
-        fitViewOptions={{ padding: 0.18 }}
+        fitViewOptions={{ padding: 0.16 }}
+        minZoom={0.2}
+        maxZoom={1.15}
         connectionLineType={ConnectionLineType.SmoothStep}
         connectionLineStyle={{
           stroke: "oklch(0.6 0.18 285)",
@@ -133,8 +130,8 @@ export function Canvas({ initialGraph }: CanvasProps) {
             "--xy-connectionline-stroke-width": 2,
           } as React.CSSProperties
         }
-        maxZoom={1.15}
       >
+        <AutoFitOnHydrate nodeCount={nodes.length} />
         <Background
           variant={BackgroundVariant.Dots}
           gap={22}

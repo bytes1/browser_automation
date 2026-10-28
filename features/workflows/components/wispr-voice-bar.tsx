@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState, useTransition } from "react"
-import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import {
   useReactFlow,
   useStore,
@@ -9,6 +8,7 @@ import {
   type EdgeChange,
   type NodeChange,
 } from "@xyflow/react"
+import { useWorkflowFlow } from "@/features/workflows/components/workflow-flow-provider"
 import {
   AudioLines,
   CheckCircle2,
@@ -348,7 +348,7 @@ export function WisprVoiceBar() {
 
   const { fitView, updateNodeData } = useReactFlow<StepNodeType>()
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
-    useLiveblocksFlow<StepNodeType, Edge>({ suspense: true })
+    useWorkflowFlow()
 
   const selectedNode = useStore((s) =>
     s.nodes.find((n) => n.selected)

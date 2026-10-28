@@ -31,42 +31,42 @@ const STARTER_TEMPLATES: {
   description: string
   icon: typeof SparklesIcon
 }[] = [
-  {
-    id: "cultural-positioning",
-    title: "Cultural Positioning Intel",
-    description:
-      "Analyze your live site through three Qloo audience lenses, scrape competitor messaging, and generate a testable positioning brief.",
-    icon: SparklesIcon,
-  },
-  {
-    id: "web-to-taste",
-    title: "Web-to-Taste Auto-Discovery",
-    description:
-      "Scrape a live website, auto-resolve cultural seeds via Qloo, and generate a cross-domain taste brief.",
-    icon: GlobeIcon,
-  },
-  {
-    id: "concierge",
-    title: "Cultural Concierge",
-    description:
-      "Taste seeds → Tokyo venues from Qloo → live web check → VIP itinerary email.",
-    icon: SparklesIcon,
-  },
-  {
-    id: "cross-domain",
-    title: "Brand Affinity Scout",
-    description:
-      "Map film aesthetics like Wes Anderson to aligned lifestyle brands and email the report.",
-    icon: CompassIcon,
-  },
-  {
-    id: "local",
-    title: "Local Hotspots",
-    description:
-      "Turn a favorite artist into explainable New York dining & nightlife picks.",
-    icon: MapPinIcon,
-  },
-]
+    {
+      id: "cultural-positioning",
+      title: "Startup Subculture & Competitor Positioning",
+      description:
+        "Drop your live startup URL to see how 3 cultural subcultures perceive your product via Qloo, and automatically scrape competitor positioning for each persona.",
+      icon: SparklesIcon,
+    },
+    {
+      id: "web-to-taste",
+      title: "Web-to-Taste Auto-Discovery",
+      description:
+        "Scrape a live website, auto-resolve cultural seeds via Qloo, and generate a cross-domain taste brief.",
+      icon: GlobeIcon,
+    },
+    {
+      id: "concierge",
+      title: "Cultural Concierge",
+      description:
+        "Taste seeds → Tokyo venues from Qloo → live web check → VIP itinerary email.",
+      icon: SparklesIcon,
+    },
+    {
+      id: "cross-domain",
+      title: "Brand Affinity Scout",
+      description:
+        "Map film aesthetics like Wes Anderson to aligned lifestyle brands and email the report.",
+      icon: CompassIcon,
+    },
+    {
+      id: "local",
+      title: "Local Hotspots",
+      description:
+        "Turn a favorite artist into explainable New York dining & nightlife picks.",
+      icon: MapPinIcon,
+    },
+  ]
 
 export default function Page() {
   const [isPending, startTransition] = useTransition()

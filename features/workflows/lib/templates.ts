@@ -28,11 +28,11 @@ export interface WorkflowTemplate {
 export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
   "cultural-positioning": {
     id: "cultural-positioning",
-    name: "Cultural Positioning Intelligence",
-    title: "Cultural Positioning & Competitor Intel",
+    name: "Subculture Positioning & Competitor Intel",
+    title: "Startup Subculture & Competitor Positioning",
     description:
-      "Analyze your live product site through three Qloo cultural audience lenses, research competitor messaging, and synthesize a positioning brief.",
-    badge: "3 Audience Lenses",
+      "Drop your live startup URL to see how 3 cultural subcultures perceive your product, scrape competitor positioning for each persona, and synthesize a GTM brief.",
+    badge: "Founder GTM + 3 Personas",
     buildGraph: (center = { x: 300, y: 200 }, existingStartId = "start") => {
       const startId = existingStartId
       const siteId = crypto.randomUUID()
@@ -42,20 +42,29 @@ export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
       const personas = [
         {
           key: "design",
-          title: "Design-Led Culture",
-          seeds: "A24, Wes Anderson, Kinfolk",
+          title: "Design & Indie Craft",
+          seeds: "A24, Wes Anderson, Teenage Engineering",
+          vibeTags: "minimalist, craft, design",
+          competitorUrl: "https://www.raycast.com",
+          competitorLabel: "Raycast (Design-Led)",
           row: center.y - 330,
         },
         {
-          key: "outdoor",
-          title: "Outdoor & Conscious Living",
-          seeds: "Patagonia, National Geographic, Bon Iver",
+          key: "operator",
+          title: "High-Growth Tech Operators",
+          seeds: "Christopher Nolan, Wired, Apple",
+          vibeTags: "modern, high-performance, scale",
+          competitorUrl: "https://vercel.com",
+          competitorLabel: "Vercel (Scale-Led)",
           row: center.y,
         },
         {
           key: "creator",
-          title: "Gaming & Digital Creators",
-          seeds: "Nintendo, Studio Ghibli, Twitch",
+          title: "Creator & Gaming Subculture",
+          seeds: "Studio Ghibli, Nintendo, Discord",
+          vibeTags: "playful, community, creator",
+          competitorUrl: "https://supabase.com",
+          competitorLabel: "Supabase (Community-Led)",
           row: center.y + 330,
         },
       ]
@@ -64,31 +73,31 @@ export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
         {
           id: startId,
           type: "step",
-          position: { x: center.x - 930, y: center.y },
+          position: { x: center.x - 860, y: center.y },
           data: { type: "start", kind: "trigger", title: "Start", values: {} },
         },
         {
           id: siteId,
           type: "step",
-          position: { x: center.x - 680, y: center.y },
+          position: { x: center.x - 600, y: center.y },
           data: {
             type: "open-url",
             kind: "action",
-            title: "Your Startup Website (replace URL)",
+            title: "Your Startup Website (Drop URL)",
             values: { url: "https://linear.app" },
           },
         },
         {
           id: productId,
           type: "step",
-          position: { x: center.x - 430, y: center.y },
+          position: { x: center.x - 320, y: center.y },
           data: {
             type: "extract",
             kind: "action",
             title: "Extract Product Positioning",
             values: {
               instruction:
-                "From this company's live website, extract a compact JSON object with the company name, product category, core value proposition, target customer, and the three most prominent positioning claims. Use only information visible on this site.",
+                "From this startup's live website, extract the company name, product category, hero headline, core value proposition, target audience, and top 3 positioning claims.",
             },
           },
         },
@@ -105,16 +114,15 @@ export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
         const seedsId = crypto.randomUUID()
         const demographicsId = crypto.randomUUID()
         const brandsId = crypto.randomUUID()
-        const searchId = crypto.randomUUID()
-        const actId = crypto.randomUUID()
-        const competitorId = crypto.randomUUID()
+        const compOpenId = crypto.randomUUID()
+        const compExtractId = crypto.randomUUID()
         const row = persona.row
 
         nodes.push(
           {
             id: seedsId,
             type: "step",
-            position: { x: center.x - 180, y: row },
+            position: { x: center.x - 40, y: row },
             data: {
               type: "qloo-search",
               kind: "action",
@@ -125,18 +133,18 @@ export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
           {
             id: demographicsId,
             type: "step",
-            position: { x: center.x + 70, y: row - 115 },
+            position: { x: center.x + 240, y: row - 105 },
             data: {
               type: "qloo-demographics",
               kind: "action",
-              title: `${persona.title} Audience`,
+              title: `${persona.title} Persona`,
               values: { entityIds: `{{ ${seedsId}.entityIds }}` },
             },
           },
           {
             id: brandsId,
             type: "step",
-            position: { x: center.x + 70, y: row + 115 },
+            position: { x: center.x + 240, y: row + 105 },
             data: {
               type: "qloo-recommend",
               kind: "action",
@@ -145,87 +153,69 @@ export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
                 entityIds: `{{ ${seedsId}.entityIds }}`,
                 targetType: "urn:entity:brand",
                 city: "",
-                vibeTags: "",
+                vibeTags: persona.vibeTags,
                 negativeSeeds: "",
                 limit: "5",
               },
             },
           },
           {
-            id: searchId,
+            id: compOpenId,
             type: "step",
-            position: { x: center.x + 345, y: row + 115 },
+            position: { x: center.x + 530, y: row + 105 },
             data: {
               type: "open-url",
               kind: "action",
-              title: `${persona.title} Competitor Search`,
+              title: `Competitor: ${persona.competitorLabel}`,
               values: {
-                url: `https://www.google.com/search?q={{ ${productId}.data }}+competitors+alternatives+{{ ${brandsId}.names }}`,
+                url: persona.competitorUrl,
               },
             },
           },
           {
-            id: actId,
+            id: compExtractId,
             type: "step",
-            position: { x: center.x + 595, y: row + 115 },
-            data: {
-              type: "act",
-              kind: "action",
-              title: `${persona.title} Open Competitor`,
-              values: {
-                instruction:
-                  "From the search results, open the official website of the most relevant direct competitor or alternative to the startup product. Skip ads, directories, and review pages.",
-              },
-            },
-          },
-          {
-            id: competitorId,
-            type: "step",
-            position: { x: center.x + 845, y: row + 115 },
+            position: { x: center.x + 810, y: row + 105 },
             data: {
               type: "extract",
               kind: "action",
-              title: `${persona.title} Positioning Evidence`,
+              title: `${persona.title} Competitor Messaging`,
               values: {
                 instruction:
-                  "On this competitor's official website, extract its company name, page URL, product category, target customer, hero headline, core promise, and proof points. Return only information visible on the page as a compact JSON object.",
+                  "Extract this competitor's hero headline, core positioning hook, target persona appeal, and top 3 proof points or differentiators.",
               },
             },
           }
         )
 
         edges.push(
-          { id: crypto.randomUUID(), source: startId, target: seedsId },
           { id: crypto.randomUUID(), source: productId, target: seedsId },
           { id: crypto.randomUUID(), source: seedsId, target: demographicsId },
           { id: crypto.randomUUID(), source: seedsId, target: brandsId },
-          { id: crypto.randomUUID(), source: productId, target: searchId },
-          { id: crypto.randomUUID(), source: brandsId, target: searchId },
-          { id: crypto.randomUUID(), source: searchId, target: actId },
-          { id: crypto.randomUUID(), source: actId, target: competitorId },
+          { id: crypto.randomUUID(), source: brandsId, target: compOpenId },
+          { id: crypto.randomUUID(), source: compOpenId, target: compExtractId },
           { id: crypto.randomUUID(), source: demographicsId, target: synthId },
-          { id: crypto.randomUUID(), source: brandsId, target: synthId },
-          { id: crypto.randomUUID(), source: competitorId, target: synthId }
+          { id: crypto.randomUUID(), source: compExtractId, target: synthId }
         )
 
         personaContext.push(
-          `${persona.title}: Qloo seeds {{ ${seedsId}.summary }}\nAudience profile {{ ${demographicsId}.personaSummary }}\nAffinity brands:\n{{ ${brandsId}.summary }}\nCompetitor website evidence:\n{{ ${competitorId}.data }}`
+          `[${persona.title} Subculture]\nQloo Seeds: {{ ${seedsId}.summary }}\nAudience Demographics: {{ ${demographicsId}.personaSummary }}\nAligned Cultural Brands:\n{{ ${brandsId}.summary }}\nCompetitor (${persona.competitorLabel}) Live Positioning:\n{{ ${compExtractId}.data }}`
         )
       }
 
       nodes.push({
         id: synthId,
         type: "step",
-        position: { x: center.x + 1170, y: center.y },
+        position: { x: center.x + 1110, y: center.y },
         data: {
           type: "ai-synthesize",
           kind: "action",
-          title: "Cultural Positioning Brief",
+          title: "Subculture Perception & Positioning Brief",
           values: {
             format: "brief",
             instruction:
-              "Create a founder-ready cultural positioning brief comparing how three distinct subcultures may respond to this startup's product. For each audience, compare its Qloo affinity signals and audience profile with the live-scraped competitor messaging; identify a plausible resonance, a positioning gap, and one testable message. Clearly label audience perception as a hypothesis, distinguish Qloo affinity signals from website evidence, and do not claim this is survey research or invent facts. Treat demographics as directional only; if profiles look like generic fallback values, disclose that and do not draw persona-specific conclusions from them.",
-            contextData: `Startup website positioning:\n{{ ${productId}.data }}\n\n${personaContext.join("\n\n")}`,
+              "Create a founder-ready Subculture Perception & Competitor Positioning Brief. Compare how each of the 3 cultural subcultures (Design & Indie Craft, High-Growth Tech Operators, and Creator & Gaming Subculture) perceives the founder's live website positioning versus the scraped competitor messaging for that persona. For each subculture, provide: (1) Cultural perception & resonance score rationale based on Qloo brand affinities and demographics, (2) How the competitor frames their hook for this persona, and (3) Concrete landing-page copy and positioning recommendations the founder can ship immediately.",
+            contextData: `Founder's Live Website Positioning:\n{{ ${productId}.data }}\n\n${personaContext.join("\n\n")}`,
           },
         },
       })
