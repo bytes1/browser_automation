@@ -730,7 +730,7 @@ function Palette() {
 
     const { nodes: newNodes, edges: newEdges } = template.buildGraph(
       center,
-      () => crypto.randomUUID()
+      crypto.randomUUID()
     )
 
     replaceGraph(newNodes, newEdges)
