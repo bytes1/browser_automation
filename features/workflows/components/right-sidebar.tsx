@@ -822,24 +822,6 @@ function Palette() {
         <div className="grid gap-1.5">
           <button
             type="button"
-            onClick={() => loadTemplate("cultural-positioning")}
-            className="group flex w-full items-center gap-2.5 rounded-lg border border-violet-500/35 bg-gradient-to-r from-violet-500/12 via-fuchsia-500/8 to-transparent px-2.5 py-2 text-left text-xs font-medium text-foreground transition-all hover:border-violet-500/60 hover:from-violet-500/20 hover:shadow-2xs"
-          >
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-violet-500/20 text-violet-600 dark:text-violet-300">
-              <Radar className="size-3.5" />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-semibold">
-                Subculture &amp; Competitor Positioning
-              </span>
-              <span className="truncate text-[10px] text-muted-foreground">
-                Your URL → 3 Qloo Personas → Competitor Scrape
-              </span>
-            </span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => loadTemplate("web-to-taste")}
             className="group flex w-full items-center gap-2.5 rounded-lg border border-emerald-500/25 bg-gradient-to-r from-emerald-500/8 via-teal-500/5 to-transparent px-2.5 py-2 text-left text-xs font-medium text-foreground transition-all hover:border-emerald-500/50 hover:from-emerald-500/15 hover:shadow-2xs"
           >
@@ -885,6 +867,24 @@ function Palette() {
               <MapPin className="size-3.5" />
             </span>
             <span className="truncate">Local Places Explorer</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => loadTemplate("cultural-positioning")}
+            className="group flex w-full items-center gap-2.5 rounded-lg border border-violet-500/35 bg-gradient-to-r from-violet-500/12 via-fuchsia-500/8 to-transparent px-2.5 py-2 text-left text-xs font-medium text-foreground transition-all hover:border-violet-500/60 hover:from-violet-500/20 hover:shadow-2xs"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-violet-500/20 text-violet-600 dark:text-violet-300">
+              <Radar className="size-3.5" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate font-semibold">
+                Subculture &amp; Competitor Positioning
+              </span>
+              <span className="truncate text-[10px] text-muted-foreground">
+                Your URL → 3 Qloo Personas → Competitor Scrape
+              </span>
+            </span>
           </button>
         </div>
       </div>

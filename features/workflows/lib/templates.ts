@@ -26,206 +26,6 @@ export interface WorkflowTemplate {
 }
 
 export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
-  "cultural-positioning": {
-    id: "cultural-positioning",
-    name: "Subculture Positioning & Competitor Intel",
-    title: "Startup Subculture & Competitor Positioning",
-    description:
-      "Drop your live startup URL to see how 3 cultural subcultures perceive your product, scrape competitor positioning for each persona, and synthesize a GTM brief.",
-    badge: "Founder GTM + 3 Personas",
-    buildGraph: (center = { x: 300, y: 200 }, existingStartId = "start") => {
-      const startId = existingStartId
-      const siteId = crypto.randomUUID()
-      const productId = crypto.randomUUID()
-      const synthId = crypto.randomUUID()
-
-      const personas = [
-        {
-          key: "design",
-          title: "Design & Indie Craft",
-          seeds: "A24, Wes Anderson, Teenage Engineering",
-          vibeTags: "minimalist, craft, design",
-          competitorUrl: "https://www.raycast.com",
-          competitorLabel: "Raycast (Design-Led)",
-          row: center.y - 330,
-        },
-        {
-          key: "operator",
-          title: "High-Growth Tech Operators",
-          seeds: "Christopher Nolan, Wired, Apple",
-          vibeTags: "modern, high-performance, scale",
-          competitorUrl: "https://vercel.com",
-          competitorLabel: "Vercel (Scale-Led)",
-          row: center.y,
-        },
-        {
-          key: "creator",
-          title: "Creator & Gaming Subculture",
-          seeds: "Studio Ghibli, Nintendo, Discord",
-          vibeTags: "playful, community, creator",
-          competitorUrl: "https://supabase.com",
-          competitorLabel: "Supabase (Community-Led)",
-          row: center.y + 330,
-        },
-      ]
-
-      const nodes: StepNodeType[] = [
-        {
-          id: startId,
-          type: "step",
-          position: { x: center.x - 860, y: center.y },
-          data: { type: "start", kind: "trigger", title: "Start", values: {} },
-        },
-        {
-          id: siteId,
-          type: "step",
-          position: { x: center.x - 600, y: center.y },
-          data: {
-            type: "open-url",
-            kind: "action",
-            title: "Your Startup Website (Drop URL)",
-            values: { url: "https://linear.app" },
-          },
-        },
-        {
-          id: productId,
-          type: "step",
-          position: { x: center.x - 320, y: center.y },
-          data: {
-            type: "extract",
-            kind: "action",
-            title: "Extract Product Positioning",
-            values: {
-              instruction:
-                "From this startup's live website, extract the company name, product category, hero headline, core value proposition, target audience, and top 3 positioning claims.",
-            },
-          },
-        },
-      ]
-
-      const edges: Edge[] = [
-        { id: crypto.randomUUID(), source: startId, target: siteId },
-        { id: crypto.randomUUID(), source: siteId, target: productId },
-      ]
-
-      const personaContext: string[] = []
-
-      for (const persona of personas) {
-        const seedsId = crypto.randomUUID()
-        const demographicsId = crypto.randomUUID()
-        const brandsId = crypto.randomUUID()
-        const compOpenId = crypto.randomUUID()
-        const compExtractId = crypto.randomUUID()
-        const row = persona.row
-
-        nodes.push(
-          {
-            id: seedsId,
-            type: "step",
-            position: { x: center.x - 40, y: row },
-            data: {
-              type: "qloo-search",
-              kind: "action",
-              title: `${persona.title} Seeds`,
-              values: { query: persona.seeds, entityType: "any" },
-            },
-          },
-          {
-            id: demographicsId,
-            type: "step",
-            position: { x: center.x + 240, y: row - 105 },
-            data: {
-              type: "qloo-demographics",
-              kind: "action",
-              title: `${persona.title} Persona`,
-              values: { entityIds: `{{ ${seedsId}.entityIds }}` },
-            },
-          },
-          {
-            id: brandsId,
-            type: "step",
-            position: { x: center.x + 240, y: row + 105 },
-            data: {
-              type: "qloo-recommend",
-              kind: "action",
-              title: `${persona.title} Brand Affinities`,
-              values: {
-                entityIds: `{{ ${seedsId}.entityIds }}`,
-                targetType: "urn:entity:brand",
-                city: "",
-                vibeTags: persona.vibeTags,
-                negativeSeeds: "",
-                limit: "5",
-              },
-            },
-          },
-          {
-            id: compOpenId,
-            type: "step",
-            position: { x: center.x + 530, y: row + 105 },
-            data: {
-              type: "open-url",
-              kind: "action",
-              title: `Competitor: ${persona.competitorLabel}`,
-              values: {
-                url: persona.competitorUrl,
-              },
-            },
-          },
-          {
-            id: compExtractId,
-            type: "step",
-            position: { x: center.x + 810, y: row + 105 },
-            data: {
-              type: "extract",
-              kind: "action",
-              title: `${persona.title} Competitor Messaging`,
-              values: {
-                instruction:
-                  "Extract this competitor's hero headline, core positioning hook, target persona appeal, and top 3 proof points or differentiators.",
-              },
-            },
-          }
-        )
-
-        edges.push(
-          { id: crypto.randomUUID(), source: productId, target: seedsId },
-          { id: crypto.randomUUID(), source: seedsId, target: demographicsId },
-          { id: crypto.randomUUID(), source: seedsId, target: brandsId },
-          { id: crypto.randomUUID(), source: brandsId, target: compOpenId },
-          { id: crypto.randomUUID(), source: compOpenId, target: compExtractId },
-          { id: crypto.randomUUID(), source: demographicsId, target: synthId },
-          { id: crypto.randomUUID(), source: compExtractId, target: synthId }
-        )
-
-        personaContext.push(
-          `[${persona.title} Subculture]\nQloo Seeds: {{ ${seedsId}.summary }}\nAudience Demographics: {{ ${demographicsId}.personaSummary }}\nAligned Cultural Brands:\n{{ ${brandsId}.summary }}\nCompetitor (${persona.competitorLabel}) Live Positioning:\n{{ ${compExtractId}.data }}`
-        )
-      }
-
-      nodes.push({
-        id: synthId,
-        type: "step",
-        position: { x: center.x + 1110, y: center.y },
-        data: {
-          type: "ai-synthesize",
-          kind: "action",
-          title: "Subculture Perception & Positioning Brief",
-          values: {
-            format: "brief",
-            instruction:
-              "Create a founder-ready Subculture Perception & Competitor Positioning Brief. Compare how each of the 3 cultural subcultures (Design & Indie Craft, High-Growth Tech Operators, and Creator & Gaming Subculture) perceives the founder's live website positioning versus the scraped competitor messaging for that persona. For each subculture, provide: (1) Cultural perception & resonance score rationale based on Qloo brand affinities and demographics, (2) How the competitor frames their hook for this persona, and (3) Concrete landing-page copy and positioning recommendations the founder can ship immediately.",
-            contextData: `Founder's Live Website Positioning:\n{{ ${productId}.data }}\n\n${personaContext.join("\n\n")}`,
-          },
-        },
-      })
-
-      edges.push({ id: crypto.randomUUID(), source: productId, target: synthId })
-
-      return { startId, nodes, edges }
-    },
-  },
-
   "web-to-taste": {
     id: "web-to-taste",
     name: "Web-to-Taste Auto-Discovery",
@@ -556,6 +356,206 @@ export const WORKFLOW_TEMPLATES: Record<TemplateId, WorkflowTemplate> = {
         { id: crypto.randomUUID(), source: startId, target: seedsId },
         { id: crypto.randomUUID(), source: seedsId, target: localId },
       ]
+
+      return { startId, nodes, edges }
+    },
+  },
+
+  "cultural-positioning": {
+    id: "cultural-positioning",
+    name: "Subculture Positioning & Competitor Intel",
+    title: "Startup Subculture & Competitor Positioning",
+    description:
+      "Drop your live startup URL to see how 3 cultural subcultures perceive your product, scrape competitor positioning for each persona, and synthesize a GTM brief.",
+    badge: "Founder GTM + 3 Personas",
+    buildGraph: (center = { x: 300, y: 200 }, existingStartId = "start") => {
+      const startId = existingStartId
+      const siteId = crypto.randomUUID()
+      const productId = crypto.randomUUID()
+      const synthId = crypto.randomUUID()
+
+      const personas = [
+        {
+          key: "design",
+          title: "Design & Indie Craft",
+          seeds: "A24, Wes Anderson, Teenage Engineering",
+          vibeTags: "minimalist, craft, design",
+          competitorUrl: "https://www.raycast.com",
+          competitorLabel: "Raycast (Design-Led)",
+          row: center.y - 330,
+        },
+        {
+          key: "operator",
+          title: "High-Growth Tech Operators",
+          seeds: "Christopher Nolan, Wired, Apple",
+          vibeTags: "modern, high-performance, scale",
+          competitorUrl: "https://vercel.com",
+          competitorLabel: "Vercel (Scale-Led)",
+          row: center.y,
+        },
+        {
+          key: "creator",
+          title: "Creator & Gaming Subculture",
+          seeds: "Studio Ghibli, Nintendo, Discord",
+          vibeTags: "playful, community, creator",
+          competitorUrl: "https://supabase.com",
+          competitorLabel: "Supabase (Community-Led)",
+          row: center.y + 330,
+        },
+      ]
+
+      const nodes: StepNodeType[] = [
+        {
+          id: startId,
+          type: "step",
+          position: { x: center.x - 860, y: center.y },
+          data: { type: "start", kind: "trigger", title: "Start", values: {} },
+        },
+        {
+          id: siteId,
+          type: "step",
+          position: { x: center.x - 600, y: center.y },
+          data: {
+            type: "open-url",
+            kind: "action",
+            title: "Your Startup Website (Drop URL)",
+            values: { url: "https://linear.app" },
+          },
+        },
+        {
+          id: productId,
+          type: "step",
+          position: { x: center.x - 320, y: center.y },
+          data: {
+            type: "extract",
+            kind: "action",
+            title: "Extract Product Positioning",
+            values: {
+              instruction:
+                "From this startup's live website, extract the company name, product category, hero headline, core value proposition, target audience, and top 3 positioning claims.",
+            },
+          },
+        },
+      ]
+
+      const edges: Edge[] = [
+        { id: crypto.randomUUID(), source: startId, target: siteId },
+        { id: crypto.randomUUID(), source: siteId, target: productId },
+      ]
+
+      const personaContext: string[] = []
+
+      for (const persona of personas) {
+        const seedsId = crypto.randomUUID()
+        const demographicsId = crypto.randomUUID()
+        const brandsId = crypto.randomUUID()
+        const compOpenId = crypto.randomUUID()
+        const compExtractId = crypto.randomUUID()
+        const row = persona.row
+
+        nodes.push(
+          {
+            id: seedsId,
+            type: "step",
+            position: { x: center.x - 40, y: row },
+            data: {
+              type: "qloo-search",
+              kind: "action",
+              title: `${persona.title} Seeds`,
+              values: { query: persona.seeds, entityType: "any" },
+            },
+          },
+          {
+            id: demographicsId,
+            type: "step",
+            position: { x: center.x + 240, y: row - 105 },
+            data: {
+              type: "qloo-demographics",
+              kind: "action",
+              title: `${persona.title} Persona`,
+              values: { entityIds: `{{ ${seedsId}.entityIds }}` },
+            },
+          },
+          {
+            id: brandsId,
+            type: "step",
+            position: { x: center.x + 240, y: row + 105 },
+            data: {
+              type: "qloo-recommend",
+              kind: "action",
+              title: `${persona.title} Brand Affinities`,
+              values: {
+                entityIds: `{{ ${seedsId}.entityIds }}`,
+                targetType: "urn:entity:brand",
+                city: "",
+                vibeTags: persona.vibeTags,
+                negativeSeeds: "",
+                limit: "5",
+              },
+            },
+          },
+          {
+            id: compOpenId,
+            type: "step",
+            position: { x: center.x + 530, y: row + 105 },
+            data: {
+              type: "open-url",
+              kind: "action",
+              title: `Competitor: ${persona.competitorLabel}`,
+              values: {
+                url: persona.competitorUrl,
+              },
+            },
+          },
+          {
+            id: compExtractId,
+            type: "step",
+            position: { x: center.x + 810, y: row + 105 },
+            data: {
+              type: "extract",
+              kind: "action",
+              title: `${persona.title} Competitor Messaging`,
+              values: {
+                instruction:
+                  "Extract this competitor's hero headline, core positioning hook, target persona appeal, and top 3 proof points or differentiators.",
+              },
+            },
+          }
+        )
+
+        edges.push(
+          { id: crypto.randomUUID(), source: productId, target: seedsId },
+          { id: crypto.randomUUID(), source: seedsId, target: demographicsId },
+          { id: crypto.randomUUID(), source: seedsId, target: brandsId },
+          { id: crypto.randomUUID(), source: brandsId, target: compOpenId },
+          { id: crypto.randomUUID(), source: compOpenId, target: compExtractId },
+          { id: crypto.randomUUID(), source: demographicsId, target: synthId },
+          { id: crypto.randomUUID(), source: compExtractId, target: synthId }
+        )
+
+        personaContext.push(
+          `[${persona.title} Subculture]\nQloo Seeds: {{ ${seedsId}.summary }}\nAudience Demographics: {{ ${demographicsId}.personaSummary }}\nAligned Cultural Brands:\n{{ ${brandsId}.summary }}\nCompetitor (${persona.competitorLabel}) Live Positioning:\n{{ ${compExtractId}.data }}`
+        )
+      }
+
+      nodes.push({
+        id: synthId,
+        type: "step",
+        position: { x: center.x + 1110, y: center.y },
+        data: {
+          type: "ai-synthesize",
+          kind: "action",
+          title: "Subculture Perception & Positioning Brief",
+          values: {
+            format: "brief",
+            instruction:
+              "Create a founder-ready Subculture Perception & Competitor Positioning Brief. Compare how each of the 3 cultural subcultures (Design & Indie Craft, High-Growth Tech Operators, and Creator & Gaming Subculture) perceives the founder's live website positioning versus the scraped competitor messaging for that persona. For each subculture, provide: (1) Cultural perception & resonance score rationale based on Qloo brand affinities and demographics, (2) How the competitor frames their hook for this persona, and (3) Concrete landing-page copy and positioning recommendations the founder can ship immediately.",
+            contextData: `Founder's Live Website Positioning:\n{{ ${productId}.data }}\n\n${personaContext.join("\n\n")}`,
+          },
+        },
+      })
+
+      edges.push({ id: crypto.randomUUID(), source: productId, target: synthId })
 
       return { startId, nodes, edges }
     },

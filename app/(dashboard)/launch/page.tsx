@@ -32,13 +32,6 @@ const STARTER_TEMPLATES: {
   icon: typeof SparklesIcon
 }[] = [
     {
-      id: "cultural-positioning",
-      title: "Startup Subculture & Competitor Positioning",
-      description:
-        "Drop your live startup URL to see how 3 cultural subcultures perceive your product via Qloo, and automatically scrape competitor positioning for each persona.",
-      icon: SparklesIcon,
-    },
-    {
       id: "web-to-taste",
       title: "Web-to-Taste Auto-Discovery",
       description:
@@ -65,6 +58,13 @@ const STARTER_TEMPLATES: {
       description:
         "Turn a favorite artist into explainable New York dining & nightlife picks.",
       icon: MapPinIcon,
+    },
+    {
+      id: "cultural-positioning",
+      title: "Startup Subculture & Competitor Positioning",
+      description:
+        "Drop your live startup URL to see how 3 cultural subcultures perceive your product via Qloo, and automatically scrape competitor positioning for each persona.",
+      icon: SparklesIcon,
     },
   ]
 
