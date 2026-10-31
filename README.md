@@ -1,11 +1,10 @@
 <div align="center">
 
-# 🎙️🌐 Browsevibe · Voice-First Autonomous Browser & Cultural Workflow Studio
+# 🌐 Browsevibe · AI Browser & Cultural Workflow Studio
 
-### *Speak Workflows into Existence with Wispr Flow · Execute on Self-Healing Cloud Browsers & Cultural Taste AI*
+### *Create visual workflows for browser automation and cultural research*
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![Wispr Flow](https://img.shields.io/badge/Wispr_Flow-Voice--to--Workflow-a855f7?style=for-the-badge)](https://wisprflow.ai/)
 [![Stagehand v4](https://img.shields.io/badge/Browserbase-Stagehand_v4-8b5cf6?style=for-the-badge)](https://browserbase.com/)
 [![Qloo Taste AI](https://img.shields.io/badge/Qloo-Taste_AI™_Graph-f43f5e?style=for-the-badge)](https://qloo.com/)
 [![Google Gemini](https://img.shields.io/badge/Google_Gemini-Flash-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev/)
@@ -13,7 +12,7 @@
 [![Liveblocks](https://img.shields.io/badge/Liveblocks-Multiplayer_Canvas-6366f1?style=for-the-badge)](https://liveblocks.io/)
 
 <p align="center">
-  <em>A voice-steered, multiplayer visual AI workflow studio that unites <strong>Wispr Flow</strong> hands-free dictation, <strong>Browserbase + Stagehand v4</strong> self-healing cloud browsers, and <strong>Qloo Taste AI™</strong> cultural intelligence.</em>
+  <em>A visual AI workflow studio for browser automation, cultural research, and collaborative execution.</em>
 </p>
 
 </div>
@@ -30,9 +29,9 @@ Building multi-step browser automations and market/cultural research pipelines h
 4. **Web-Blind Recommendation Engines:** Cultural APIs know *which* boutique venue or brand matches an audience, but cannot open a live browser to verify availability, scrape a storefront, or send a synthesized brief.
 
 ### ⚡ Enter **Browsevibe**
-**Browsevibe** unites **Wispr Flow Desktop voice-to-workflow authoring**, **Browserbase + Stagehand v4** stealth cloud browsers, **Qloo’s Cultural Taste Graph** (`/search` & `/v2/insights`), **Google Gemini** structured synthesis, **Liveblocks** real-time multiplayer collaboration, and **Trigger.dev** durable execution in one studio:
+**Browsevibe** combines visual workflow building, **Browserbase + Stagehand v4** cloud browsers, **Qloo’s Cultural Taste Graph** (`/search` & `/v2/insights`), **Google Gemini** synthesis, **Liveblocks** collaboration, and **Trigger.dev** execution:
 
-- **🎙️ Voice ➔ Canvas (Wispr Flow Native):** Press `⌘K` / `Ctrl+K` anywhere on the canvas, hold your **Wispr Flow** hotkey, and speak a complete workflow. Browsevibe detects the Wispr Flow dictation burst and **automatically builds, wires, and live-syncs the nodes onto your canvas hands-free**.
+- **🧩 Natural-Language Workflow Editing:** Describe a workflow or an edit in the canvas assistant and apply the generated steps to your workflow.
 - **🧭 Taste ➔ Live Web Action:** Resolve cultural taste seeds ➔ discover cross-domain venues or brands ➔ dispatch a stealth cloud browser to verify live details (with **Live Browser Stream & Session Replay** inside the console) ➔ synthesize & email a VIP brief.
 - **🌐 Live Web ➔ Taste Auto-Discovery:** Scrape any live webpage (e.g., a festival lineup, roster, or Wikipedia page) ➔ automatically resolve extracted entities into cultural taste seeds ➔ generate cross-domain brand affinities, audience demographics, and executive pitch decks.
 
@@ -42,10 +41,10 @@ Building multi-step browser automations and market/cultural research pipelines h
 
 ```mermaid
 flowchart TB
-    subgraph Voice["🎙️ Wispr Flow Voice-First Layer"]
-        VoiceBar["Floating Wispr Flow Voice Bar (⌘K)\n(Burst Dictation Detector & Hands-Free Auto-Build)"]
-        VibeParser["One-Shot 'Dictate Vibe' Parser\n(1 Spoken Sentence ➔ Seeds, City, Vibe Tags & Exclusions)"]
-        SpokenTokens["Spoken Token Alias Engine\n('insert entity IDs' ➔ {{ nodeId.entityIds }})"]
+    subgraph Input["🧩 Workflow Input"]
+        VoiceBar["Natural-Language Workflow Editor"]
+        VibeParser["Vibe Input Parser\n(Seeds, City, Vibe Tags & Exclusions)"]
+        SpokenTokens["Connection Token Suggestions\n({{ nodeId.entityIds }})"]
     end
 
     subgraph Studio["🎨 Multiplayer Visual Studio (Next.js 16 + React Flow + Liveblocks)"]
@@ -67,9 +66,9 @@ flowchart TB
         Email["Resend & Gmail Transactional Delivery"]
     end
 
-    VoiceBar -->|Hands-Free Graph Sync| Canvas
-    VibeParser -->|Auto-Fill Node Fields| Canvas
-    SpokenTokens -->|Voice Token Injection| Canvas
+    VoiceBar -->|Workflow Edits| Canvas
+    VibeParser -->|Fill Node Fields| Canvas
+    SpokenTokens -->|Token Insertion| Canvas
     AIBuilder <-->|Natural Language Graph Edits| Canvas
     Verifier <-->|POST /api/qloo/resolve| Qloo
     Canvas -->|Trigger Run / Cron Schedule| Runner
@@ -85,23 +84,18 @@ flowchart TB
 
 ## ✨ Standout Features
 
-### 1. 🎙️ Wispr Flow Voice-to-Workflow Studio (Hands-Free Canvas & Node Control)
-Designed from the ground up to pair seamlessly with **Wispr Flow Desktop**:
-- **Floating Wispr Flow Voice Bar (`⌘K` / `Ctrl+K`)** on the canvas ([wispr-voice-bar.tsx](file:///e:/frontend/codebase/browser_automation/features/workflows/components/wispr-voice-bar.tsx)):
-  - Focus with `⌘K`, hold your Wispr Flow hotkey, and speak any workflow or edit instruction.
-  - **Auto-Build on Dictation:** Automatically detects when Wispr Flow injects your formatted speech burst and immediately generates and live-syncs the workflow onto the canvas without touching `Enter` or the mouse.
-  - **Voice Node Targeting & 1-Click Undo:** Select any node on the canvas and speak to modify just that step, or click **Undo** to revert the last voice update.
-- **One-Shot "Dictate Vibe with Wispr Flow" on Cultural Nodes** ([right-sidebar.tsx](file:///e:/frontend/codebase/browser_automation/features/workflows/components/right-sidebar.tsx)):
-  - Instead of clicking through 5 separate inputs, dictate one natural sentence:
+### 1. 🧩 Natural-Language Workflow Editing
+- Describe a workflow or an edit in the canvas assistant. You can also use voice dictation with your preferred input tool.
+- **One-Shot Vibe Input** on cultural nodes:
+  - Enter one natural sentence instead of filling five separate inputs:
     > *"Find cozy vinyl bars in Tokyo for fans of Radiohead and Haruki Murakami, avoid tourist traps"*
   - Automatically parses and populates **Seeds** (`Radiohead, Haruki Murakami`), **Category** (`urn:entity:place`), **City** (`Tokyo`), **Vibe Tags** (`cozy, vinyl`), and **Exclude Seeds** (`tourist traps`).
-- **Spoken Connection Token Replacement (`{{ }}` by Voice):**
-  - While dictating into any node field with Wispr Flow, speak phrases like *"insert entity IDs"*, *"insert top pick name"*, *"insert extracted data"*, or *"insert summary"* and the editor automatically replaces your spoken phrase with the connected upstream `{{ <nodeId>.<outputPath> }}` token.
+- **Connection Tokens:** Insert upstream outputs such as entity IDs, top pick names, extracted data, or summaries into downstream node fields using `{{ <nodeId>.<outputPath> }}`.
 
 ---
 
 ### 2. 🌐 Self-Healing Cloud Browser Automation + Live Browser View (Browserbase + Stagehand v4)
-- **Zero Brittle CSS Selectors:** Powered by `@browserbasehq/stagehand` v4. Write or dictate natural instructions like *"Click the sign-in button"* or *"Extract the top 3 film titles and directors"*.
+- **Zero Brittle CSS Selectors:** Powered by `@browserbasehq/stagehand` v4. Write natural instructions like *"Click the sign-in button"* or *"Extract the top 3 film titles and directors"*.
 - **4 Composable Browser Nodes:** `Open URL` (`open-url`), `Act` (`act`), `Extract` (`extract`), and `Observe` (`observe`).
 - **Live Cloud Browser View & Session Replay inside the Run Console:**
   - Watch the remote Browserbase stealth browser navigate, click, and extract in a live interactive iframe right inside the Run Console ([workflow-console.tsx](file:///e:/frontend/codebase/browser_automation/features/workflows/components/workflow-console.tsx)), or click the pulsing **`LIVE VIEW`** badge on any running browser node on the canvas.
@@ -223,4 +217,4 @@ npm run dev
 npx trigger.dev@latest dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to explore the 3D landing page, read the interactive guide at [http://localhost:3000/docs](http://localhost:3000/docs), or press `⌘K` on the canvas to speak your first workflow with **Wispr Flow**!
+Open [http://localhost:3000](http://localhost:3000) to explore the app and read the interactive guide at [http://localhost:3000/docs](http://localhost:3000/docs).

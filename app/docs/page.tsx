@@ -38,11 +38,12 @@ import {
 type NodeCategoryFilter = "all" | "qloo" | "browser" | "ai-delivery" | "trigger"
 
 const SECTIONS = [
+  { id: "videos", label: "Video walkthroughs", icon: Play },
   { id: "quickstart", label: "1. Quickstart (60s)", icon: Zap },
   { id: "architecture", label: "2. How Browsevibe Works", icon: Layers },
   { id: "nodes", label: "3. Node Catalog (12 Nodes)", icon: Workflow },
   { id: "piping", label: "4. Data Piping {{ }}", icon: GitCompareArrows },
-  { id: "ai-builder", label: "5. Wispr Flow & AI Builder", icon: Bot },
+  { id: "ai-builder", label: "5. AI Workflow Builder", icon: Bot },
   { id: "qloo-guide", label: "6. Cultural Taste AI Guide", icon: Sparkles },
   { id: "console", label: "7. Live Console & Replay", icon: MonitorPlay },
   { id: "templates", label: "8. Starter Blueprints", icon: Compass },
@@ -261,6 +262,67 @@ export default function DocsPage() {
               </div>
             </div>
           </div>
+
+          {/* VIDEO WALKTHROUGHS */}
+          <section id="videos" className="scroll-mt-20 space-y-5">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold tracking-wider text-violet-500 uppercase">
+                Video guides
+              </span>
+              <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+                Watch how to build workflows
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Short walkthroughs for creating a workflow, using a starter
+                template, and passing data between nodes.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {[
+                {
+                  title: "Create a simple workflow",
+                  description: "Learn the basic steps for creating a workflow.",
+                  videoId: "lfbnJCy0jYE",
+                },
+                {
+                  title: "Startup Subculture & Competitor Positioning",
+                  description:
+                    "See how the template compares subculture audiences and competitor positioning.",
+                  videoId: "boBc_m4Oxv4",
+                },
+                {
+                  title: "Pass data between nodes",
+                  description:
+                    "Learn how to use one node’s output as another node’s input.",
+                  videoId: "Q_O0MVjLk9k",
+                },
+              ].map((video) => (
+                <article
+                  key={video.videoId}
+                  className="overflow-hidden rounded-xl border bg-card"
+                >
+                  <div className="aspect-video bg-muted">
+                    <iframe
+                      className="size-full"
+                      src={`https://www.youtube-nocookie.com/embed/${video.videoId}`}
+                      title={video.title}
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  </div>
+                  <div className="space-y-1 p-4">
+                    <h3 className="text-sm font-semibold">{video.title}</h3>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {video.description}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
           {/* 1. QUICKSTART */}
           <section id="quickstart" className="scroll-mt-20 space-y-5">
@@ -967,7 +1029,7 @@ export default function DocsPage() {
                 Section 08
               </span>
               <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-                4 Pre-Built Starter Blueprints
+                5 Pre-Built Starter Blueprints
               </h2>
               <p className="text-sm text-muted-foreground">
                 Every blueprint can be launched in 1 click from{" "}
@@ -1003,6 +1065,13 @@ export default function DocsPage() {
                   pipeline:
                     "Start → Cinema Aesthetic Seeds → Qloo Brand Recommendations → Send Email Report",
                   desc: "Maps film aesthetics (Wes Anderson, Studio Ghibli) to high-affinity fashion & lifestyle brands for partnership scouting.",
+                },
+                {
+                  badge: "Positioning & Competitor Research",
+                  title: "Startup Subculture & Competitor Positioning",
+                  pipeline:
+                    "Startup URL → Product Positioning → 3 Subculture Branches → Competitor Research → Positioning Brief",
+                  desc: "Compare how three cultural subcultures respond to a startup’s product, research competitors for each audience, and create a positioning brief.",
                 },
                 {
                   badge: "Local Discovery",

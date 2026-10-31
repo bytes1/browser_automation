@@ -16,7 +16,15 @@ import {
 } from "@xyflow/react"
 import { Cursors } from "@liveblocks/react-flow"
 import { AvatarStack } from "@liveblocks/react-ui"
-import { BookOpenIcon, GitBranch, Maximize2, Sparkles } from "lucide-react"
+import {
+  BookOpenIcon,
+  ChevronDown,
+  ExternalLink,
+  GitBranch,
+  Maximize2,
+  Play,
+  Sparkles,
+} from "lucide-react"
 
 import { StepNode } from "@/features/workflows/components/step-node"
 import { WisprVoiceBar } from "@/features/workflows/components/wispr-voice-bar"
@@ -164,6 +172,63 @@ export function Canvas() {
 
         {/* Top-Right Docs & Collaborative Presence Capsule */}
         <Panel position="top-right" className="m-3 flex items-center gap-2">
+          <details className="group relative">
+            <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-full border border-border/80 bg-card/85 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:shadow-md [&::-webkit-details-marker]:hidden">
+              <Play className="size-3.5 text-violet-500" />
+              <span>Getting started</span>
+              <ChevronDown className="size-3 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="absolute right-0 top-full z-50 mt-2 w-[min(21rem,calc(100vw-2rem))] rounded-xl border border-border bg-card p-3 shadow-xl">
+              <p className="px-1 pb-2 text-xs font-semibold text-foreground">
+                New to workflows? Start with these short videos.
+              </p>
+              <div className="space-y-1">
+                {[
+                  {
+                    title: "Create a simple workflow",
+                    description: "See how to build and run your first workflow.",
+                    href: "https://youtu.be/lfbnJCy0jYE",
+                  },
+                  {
+                    title: "Subculture & competitor positioning",
+                    description:
+                      "See how the template compares audiences and competitors.",
+                    href: "https://youtu.be/boBc_m4Oxv4",
+                  },
+                  {
+                    title: "Pass data between nodes",
+                    description:
+                      "Learn to use one node’s output as another node’s input.",
+                    href: "https://youtu.be/Q_O0MVjLk9k",
+                  },
+                ].map((video) => (
+                  <a
+                    key={video.href}
+                    href={video.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-start justify-between gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
+                  >
+                    <span className="space-y-0.5">
+                      <span className="block text-xs font-medium text-foreground">
+                        {video.title}
+                      </span>
+                      <span className="block text-[11px] leading-relaxed text-muted-foreground">
+                        {video.description}
+                      </span>
+                    </span>
+                    <ExternalLink className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
+              <Link
+                href="/docs#videos"
+                className="mt-2 block border-t border-border px-2 pt-2 text-xs font-medium text-violet-600 hover:underline dark:text-violet-300"
+              >
+                Open video guides in Docs
+              </Link>
+            </div>
+          </details>
           <Link
             href="/docs"
             className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/85 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-md transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:shadow-md"
